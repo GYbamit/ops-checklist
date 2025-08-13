@@ -5,9 +5,33 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Operations Center Checklist</title>
 
+  <!-- Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import { getDatabase, ref, set, get, onValue, push, remove, update } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+    
+    // TODO: Replace with your Firebase config
+    const firebaseConfig = {
+     apiKey: "AIzaSyC7qDBxgDgLAZAaNDH5X1cCAVmwshQWml4",
+  authDomain: "to-do-list-dfa40.firebaseapp.com",
+  databaseURL: "https://to-do-list-dfa40-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "to-do-list-dfa40",
+  storageBucket: "to-do-list-dfa40.firebasestorage.app",
+  messagingSenderId: "1026658012382",
+  appId: "1:1026658012382:web:30d662f7f63cbed723864f",
+  measurementId: "G-TW5MKN63SV"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const database = getDatabase(app);
+    
+    // Make Firebase available globally
+    window.firebase = { database, ref, set, get, onValue, push, remove, update };
+  </script>
+
   <!-- External Libraries -->
   <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
-  <script src="https://cdn.sheetjs.com/xlsx-0.19.3/package/dist/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 
@@ -15,7 +39,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
   <style>
-    /* ———————————————————————————————————————————————————————————————
+   /* ———————————————————————————————————————————————————————————————
        Updated Color Palette
        • Day Shift: Warm Amber
        • Night Shift: Deep Indigo
@@ -436,7 +460,13 @@
   <header class="app-header">
     <div class="header-inner">
       <div class="brand">Operations Center</div>
-      <button id="themeToggle" class="theme-toggle">Toggle Theme</button>
+      <div style="display: flex; gap: 12px; align-items: center;">
+        <div class="status-indicator">
+          <span class="status-dot" id="connectionStatus"></span>
+          <span id="connectionText">Connecting...</span>
+        </div>
+        <button id="themeToggle" class="theme-toggle">Toggle Theme</button>
+      </div>
     </div>
   </header>
 
@@ -488,7 +518,7 @@
         </div>
 
         <div class="remarks-section">
-          <textarea id="day-shift-remarks" placeholder="Enter remarks..."></textarea>
+          <textarea id="day-shift-remarks" placeholder="Enter remarks..." onblur="saveRemarks('day')"></textarea>
         </div>
       </div>
 
@@ -518,7 +548,7 @@
         </div>
 
         <div class="remarks-section">
-          <textarea id="night-shift-remarks" placeholder="Enter remarks..."></textarea>
+          <textarea id="night-shift-remarks" placeholder="Enter remarks..." onblur="saveRemarks('night')"></textarea>
         </div>
       </div>
     </div>
@@ -526,7 +556,7 @@
 
   <!-- ACTION BAR -->
   <div class="action-bar">
-    <button class="btn save" onclick="saveTasks()">Save Checklist</button>
+    <button class="btn" onclick="syncData()">Sync Now</button>
     <button class="btn sort" onclick="sortTasks()">Sort by Time</button>
     <button class="btn clear" onclick="clearAllTasks()">Clear All Tasks</button>
     <button class="btn" onclick="downloadChecklist('day')">Download Day Shift</button>
@@ -568,9 +598,9 @@
   </div>
 
   <script>
-    // ———————————————————————————————————————————————————————————————
-    // APPLICATION LOGIC (unchanged)
-    // ———————————————————————————————————————————————————————————————
+    // ─────────────────────────────────────────────────────────────────────────
+    // FIREBASE INTEGRATION
+    // ─────────────────────────────────────────────────────────────────────────
 
     const assignees = [
       "Geron","John Mick","Nelson","Jeremiah",
@@ -584,14 +614,144 @@
     let currentEditShift = '', currentEditIndex = -1;
     let tasks = { day: [], night: [] };
     let remarks = { day: '', night: '' };
+    let isConnected = false;
 
-    window.onload = () => {
+    // Firebase references
+    let tasksRef, remarksRef;
+
+    window.onload = async () => {
       initTheme();
       populateAssignees();
-      loadTasks();
+      await initFirebase();
       bindEditModal();
       startAlarmChecker();
     };
+
+    async function initFirebase() {
+      try {
+        const { database, ref, onValue } = window.firebase;
+        
+        // Initialize references
+        tasksRef = ref(database, 'shiftTasks');
+        remarksRef = ref(database, 'shiftRemarks');
+        
+        // Listen for connection status
+        const connectedRef = ref(database, '.info/connected');
+        onValue(connectedRef, (snapshot) => {
+          isConnected = snapshot.val() === true;
+          updateConnectionStatus();
+        });
+
+        // Listen for tasks changes
+        onValue(tasksRef, (snapshot) => {
+          const data = snapshot.val();
+          if (data) {
+            tasks = { day: data.day || [], night: data.night || [] };
+            adjustDates();
+            renderTasks();
+          }
+        });
+
+        // Listen for remarks changes
+        onValue(remarksRef, (snapshot) => {
+          const data = snapshot.val();
+          if (data) {
+            remarks = data;
+            document.getElementById('day-shift-remarks').value = remarks.day || '';
+            document.getElementById('night-shift-remarks').value = remarks.night || '';
+          }
+        });
+
+        showToast('Connected to Firebase', 'success');
+      } catch (error) {
+        console.error('Firebase initialization failed:', error);
+        showToast('Firebase connection failed. Check your config.', 'error');
+        // Fall back to localStorage
+        loadFromLocalStorage();
+      }
+    }
+
+    function updateConnectionStatus() {
+      const statusDot = document.getElementById('connectionStatus');
+      const statusText = document.getElementById('connectionText');
+      
+      if (isConnected) {
+        statusDot.classList.add('connected');
+        statusText.textContent = 'Connected';
+      } else {
+        statusDot.classList.remove('connected');
+        statusText.textContent = 'Offline';
+      }
+    }
+
+    async function saveTasksToFirebase() {
+      if (!isConnected || !window.firebase) {
+        showToast('Saving locally - no connection', 'info');
+        localStorage.setItem('shiftTasks', JSON.stringify(tasks));
+        return;
+      }
+
+      try {
+        const { set } = window.firebase;
+        await set(tasksRef, tasks);
+        showToast('Tasks synced to cloud', 'success');
+      } catch (error) {
+        console.error('Failed to save to Firebase:', error);
+        showToast('Failed to sync - saved locally', 'error');
+        localStorage.setItem('shiftTasks', JSON.stringify(tasks));
+      }
+    }
+
+    async function saveRemarks(shift) {
+      const value = document.getElementById(`${shift}-shift-remarks`).value;
+      remarks[shift] = value;
+
+      if (!isConnected || !window.firebase) {
+        localStorage.setItem('shiftRemarks', JSON.stringify(remarks));
+        return;
+      }
+
+      try {
+        const { set } = window.firebase;
+        await set(remarksRef, remarks);
+      } catch (error) {
+        console.error('Failed to save remarks:', error);
+        localStorage.setItem('shiftRemarks', JSON.stringify(remarks));
+      }
+    }
+
+    function loadFromLocalStorage() {
+      const savedTasks = localStorage.getItem('shiftTasks');
+      if (savedTasks) tasks = JSON.parse(savedTasks);
+      
+      const savedRemarks = localStorage.getItem('shiftRemarks');
+      if (savedRemarks) {
+        remarks = JSON.parse(savedRemarks);
+        document.getElementById('day-shift-remarks').value = remarks.day || '';
+        document.getElementById('night-shift-remarks').value = remarks.night || '';
+      }
+      
+      adjustDates();
+      renderTasks();
+    }
+
+    async function syncData() {
+      if (!isConnected) {
+        showToast('No internet connection', 'error');
+        return;
+      }
+      
+      try {
+        await saveTasksToFirebase();
+        showToast('Data synchronized', 'success');
+      } catch (error) {
+        showToast('Sync failed', 'error');
+      }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // EXISTING APPLICATION LOGIC (Updated for Firebase)
+    // ─────────────────────────────────────────────────────────────────────────
 
     function initTheme() {
       const btn  = document.getElementById('themeToggle');
@@ -615,27 +775,6 @@
             select.appendChild(opt);
           });
         });
-    }
-
-    function loadTasks() {
-      const saved = localStorage.getItem('shiftTasks');
-      if (saved) tasks = JSON.parse(saved);
-      const savedRem = localStorage.getItem('shiftRemarks');
-      if (savedRem) {
-        remarks = JSON.parse(savedRem);
-        document.getElementById('day-shift-remarks').value   = remarks.day;
-        document.getElementById('night-shift-remarks').value = remarks.night;
-      }
-      adjustDates();
-      renderTasks();
-    }
-
-    function saveTasks() {
-      remarks.day   = document.getElementById('day-shift-remarks').value;
-      remarks.night = document.getElementById('night-shift-remarks').value;
-      localStorage.setItem('shiftTasks', JSON.stringify(tasks));
-      localStorage.setItem('shiftRemarks', JSON.stringify(remarks));
-      showToast('Checklist saved','success');
     }
 
     function adjustDates() {
@@ -686,52 +825,80 @@
       document.getElementById(`${shift}-progress-label`).textContent = pct+'%';
     }
 
-    function addTask(shift) {
+    async function addTask(shift) {
       const tm = document.getElementById(`${shift}-shift-new-time`);
       const tx = document.getElementById(`${shift}-shift-new-task`);
       const sel= document.getElementById(`${shift}-shift-new-assignee`);
       const err= document.getElementById(`${shift}-shift-assignee-error`);
-      sel.classList.remove('error-border'); err.style.display='none';
-      if (!tm.value||!tx.value) { showToast('Enter time & description','error'); return; }
+      
+      sel.classList.remove('error-border'); 
+      err.style.display='none';
+      
+      if (!tm.value||!tx.value) { 
+        showToast('Enter time & description','error'); 
+        return; 
+      }
       if (!sel.value) {
         sel.classList.add('error-border');
         err.style.display='block';
         showToast('Select assignee','error');
         return;
       }
-      tasks[shift].push({
-        time: tm.value, text: tx.value, assignee: sel.value, completed: false
-      });
+      
+      const newTask = {
+        time: tm.value, 
+        text: tx.value, 
+        assignee: sel.value, 
+        completed: false,
+        id: Date.now().toString() // Add unique ID for Firebase
+      };
+      
+      tasks[shift].push(newTask);
+      
       tm.value = new Date().toISOString().slice(0,16);
-      tx.value = ''; sel.value = '';
-      renderTasks(); showToast('Task added','success');
+      tx.value = ''; 
+      sel.value = '';
+      
+      renderTasks(); 
+      await saveTasksToFirebase();
+      showToast('Task added','success');
     }
 
-    function toggleComplete(s,i) {
+    async function toggleComplete(s,i) {
       tasks[s][i].completed = !tasks[s][i].completed;
       renderTasks();
+      await saveTasksToFirebase();
     }
 
-    function deleteTask(s,i) {
+    async function deleteTask(s,i) {
       if (!confirm('Delete this task?')) return;
       tasks[s].splice(i,1);
-      renderTasks(); showToast('Task deleted','info');
+      renderTasks(); 
+      await saveTasksToFirebase();
+      showToast('Task deleted','info');
     }
 
-    function sortTasks() {
+    async function sortTasks() {
       ['day','night'].forEach(s => {
         tasks[s].sort((a,b)=> new Date(a.time)-new Date(b.time));
       });
-      renderTasks(); showToast('Tasks sorted','info');
+      renderTasks(); 
+      await saveTasksToFirebase();
+      showToast('Tasks sorted','info');
     }
 
-    function clearAllTasks() {
-      if (!confirm('Clear all tasks?')) return;
-      tasks.day=[]; tasks.night=[];
+    async function clearAllTasks() {
+      if (!confirm('Clear all tasks and remarks?')) return;
+      tasks.day=[]; 
+      tasks.night=[];
       remarks={day:'',night:''};
       document.getElementById('day-shift-remarks').value='';
       document.getElementById('night-shift-remarks').value='';
-      renderTasks(); saveTasks();
+      renderTasks(); 
+      await saveTasksToFirebase();
+      await saveRemarks('day');
+      await saveRemarks('night');
+      showToast('All data cleared','info');
     }
 
     function bindEditModal() {
@@ -741,7 +908,8 @@
     }
 
     function openEditModal(shift,i) {
-      currentEditShift = shift; currentEditIndex = i;
+      currentEditShift = shift; 
+      currentEditIndex = i;
       const t = tasks[shift][i];
       document.getElementById('edit-task-time').value     = t.time;
       document.getElementById('edit-task-text').value     = t.text;
@@ -751,31 +919,48 @@
       modal.style.display='block';
     }
 
-    function saveEdit() {
+    async function saveEdit() {
       const tm = document.getElementById('edit-task-time');
       const tx = document.getElementById('edit-task-text');
       const sel= document.getElementById('edit-task-assignee');
       const err= document.getElementById('edit-task-assignee-error');
-      sel.classList.remove('error-border'); err.style.display='none';
-      if (!tm.value||!tx.value) { showToast('Enter time & description','error'); return; }
+      
+      sel.classList.remove('error-border'); 
+      err.style.display='none';
+      
+      if (!tm.value||!tx.value) { 
+        showToast('Enter time & description','error'); 
+        return; 
+      }
       if (!sel.value) {
         sel.classList.add('error-border');
         err.style.display='block';
         showToast('Select assignee','error');
         return;
       }
+      
       const t = tasks[currentEditShift][currentEditIndex];
-      t.time = tm.value; t.text = tx.value; t.assignee = sel.value;
-      closeEditModal(); renderTasks(); showToast('Task updated','success');
+      t.time = tm.value; 
+      t.text = tx.value; 
+      t.assignee = sel.value;
+      
+      closeEditModal(); 
+      renderTasks(); 
+      await saveTasksToFirebase();
+      showToast('Task updated','success');
     }
 
-    function closeEditModal() { modal.style.display='none'; }
+    function closeEditModal() { 
+      modal.style.display='none'; 
+    }
 
     function downloadChecklist(shift) {
       const hdr = document.querySelector('.app-header');
       const bar = document.querySelector('.action-bar');
-      hdr.style.display='none'; bar.style.display='none';
+      hdr.style.display='none'; 
+      bar.style.display='none';
       showShift(shift);
+      
       html2canvas(document.getElementById('checklist-content'), {
         scale: window.devicePixelRatio*2,
         useCORS: true,
@@ -785,46 +970,61 @@
         link.download=`${shift}-shift-${new Date().toISOString().slice(0,10)}.png`;
         link.href=canvas.toDataURL('image/png');
         link.click();
+        showToast(`${shift} shift downloaded`, 'success');
       }).finally(()=>{
-        hdr.style.display=''; bar.style.display='';
+        hdr.style.display=''; 
+        bar.style.display='';
         showShift('day');
       });
     }
 
     async function exportToExcel() {
-      const wb=new ExcelJS.Workbook();
-      wb.creator='Ops Center'; wb.created=new Date();
-      function sheet(name,data,rem) {
-        const ws=wb.addWorksheet(`${name} Shift`);
-        ws.mergeCells('A1:E1');
-        ws.getCell('A1').value=`${name.toUpperCase()} SHIFT CHECKLIST`;
-        ws.getCell('A1').font={bold:true,size:14};
-        ws.mergeCells('A2:B2');
-        ws.getCell('A2').value=`Date: ${new Date().toLocaleDateString()}`;
-        const hdr=['Time','Description','Assignee','Status','Notes'];
-        const hr=ws.addRow(hdr);
-        hr.font={bold:true};
-        hr.eachCell(c=>{
-          c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFD3D3D3'}};
-          c.border={top:{style:'thin'},left:{style:'thin'},bottom:{style:'thin'}, right:{style:'thin'}};
-          c.alignment={horizontal:'center'};
-        });
-        data.forEach(t=>{
-          const row=ws.addRow([
-            formatExcel(t.time),t.text,t.assignee,
-            t.completed?'Completed':'Pending',''
-          ]);
-          if(t.completed) row.eachCell(c=>c.font={color:{argb:'FF16A34A'}});
-        });
-        ws.addRow([]); ws.addRow(['Remarks:',rem]);
-        ws.columns=[{width:20},{width:40},{width:20},{width:12},{width:30}];
+      try {
+        const wb=new ExcelJS.Workbook();
+        wb.creator='Ops Center'; 
+        wb.created=new Date();
+        
+        function createSheet(name,data,rem) {
+          const ws=wb.addWorksheet(`${name} Shift`);
+          ws.mergeCells('A1:E1');
+          ws.getCell('A1').value=`${name.toUpperCase()} SHIFT CHECKLIST`;
+          ws.getCell('A1').font={bold:true,size:14};
+          ws.mergeCells('A2:B2');
+          ws.getCell('A2').value=`Date: ${new Date().toLocaleDateString()}`;
+          
+          const hdr=['Time','Description','Assignee','Status','Notes'];
+          const hr=ws.addRow(hdr);
+          hr.font={bold:true};
+          hr.eachCell(c=>{
+            c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFD3D3D3'}};
+            c.border={top:{style:'thin'},left:{style:'thin'},bottom:{style:'thin'}, right:{style:'thin'}};
+            c.alignment={horizontal:'center'};
+          });
+          
+          data.forEach(t=>{
+            const row=ws.addRow([
+              formatExcel(t.time),t.text,t.assignee,
+              t.completed?'Completed':'Pending',''
+            ]);
+            if(t.completed) row.eachCell(c=>c.font={color:{argb:'FF16A34A'}});
+          });
+          
+          ws.addRow([]); 
+          ws.addRow(['Remarks:',rem]);
+          ws.columns=[{width:20},{width:40},{width:20},{width:12},{width:30}];
+        }
+        
+        createSheet('Day', tasks.day, remarks.day);
+        createSheet('Night', tasks.night, remarks.night);
+        
+        const buf=await wb.xlsx.writeBuffer();
+        saveAs(new Blob([buf],{type:'application/octet-stream'}),
+          `Shift_Report_${new Date().toISOString().slice(0,10)}.xlsx`);
+        showToast('Excel exported','success');
+      } catch (error) {
+        console.error('Excel export failed:', error);
+        showToast('Excel export failed','error');
       }
-      sheet('Day', tasks.day, remarks.day);
-      sheet('Night', tasks.night, remarks.night);
-      const buf=await wb.xlsx.writeBuffer();
-      saveAs(new Blob([buf],{type:'application/octet-stream'}),
-        `Shift_Report_${new Date().toISOString().slice(0,10)}.xlsx`);
-      showToast('Excel exported','success');
     }
 
     function showShift(shift) {
@@ -843,7 +1043,10 @@
           draggedIndex=+item.dataset.index;
           item.classList.add('dragging');
         });
-        item.addEventListener('dragend',()=>item.classList.remove('dragging'));
+        item.addEventListener('dragend',()=>{
+          item.classList.remove('dragging');
+          saveTasksToFirebase(); // Save after drag
+        });
         item.addEventListener('dragover',e=>e.preventDefault());
         item.addEventListener('drop',()=>{
           const ts=item.dataset.shift;
@@ -861,6 +1064,7 @@
       setInterval(checkAlarms,30000);
       checkAlarms();
     }
+    
     function checkAlarms(){
       const now=Date.now(), list=[];
       ['day','night'].forEach(s=>{
@@ -881,18 +1085,23 @@
         showAlarm(s,t);
       } else closeAlarm();
     }
+    
     function showAlarm(shift,task){
       const box=document.getElementById('alarmNotification');
       document.getElementById('alarmMessage').textContent = 
-        `${formatDisplay(task.time)} — ${task.text}`;
+        `${formatDisplay(task.time)} – ${task.text}`;
       box.style.display='block';
     }
-    function closeAlarm(){ document.getElementById('alarmNotification').style.display='none'; }
+    
+    function closeAlarm(){ 
+      document.getElementById('alarmNotification').style.display='none'; 
+    }
 
     function formatDisplay(dt){
       const d=new Date(dt);
       return d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
     }
+    
     function formatExcel(dt){
       const d=new Date(dt);
       return `${d.toLocaleDateString()} ${d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}`;
