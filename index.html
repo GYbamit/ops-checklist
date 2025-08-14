@@ -2,72 +2,92 @@
 <html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  />
   <title>Operations Center Checklist</title>
 
   <!-- Firebase SDK -->
   <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-    import { getDatabase, ref, set, get, onValue, push, remove, update } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
-    
+    import {
+      getDatabase,
+      ref,
+      set,
+      get,
+      onValue,
+      push,
+      remove,
+      update
+    } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
     // TODO: Replace with your Firebase config
     const firebaseConfig = {
-     apiKey: "AIzaSyC7qDBxgDgLAZAaNDH5X1cCAVmwshQWml4",
-  authDomain: "to-do-list-dfa40.firebaseapp.com",
-  databaseURL: "https://to-do-list-dfa40-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "to-do-list-dfa40",
-  storageBucket: "to-do-list-dfa40.firebasestorage.app",
-  messagingSenderId: "1026658012382",
-  appId: "1:1026658012382:web:30d662f7f63cbed723864f",
-  measurementId: "G-TW5MKN63SV"
+      apiKey: "AIzaSyC7qDBxgDgLAZAaNDH5X1cCAVmwshQWml4",
+      authDomain: "to-do-list-dfa40.firebaseapp.com",
+      databaseURL:
+        "https://to-do-list-dfa40-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "to-do-list-dfa40",
+      storageBucket: "to-do-list-dfa40.firebasestorage.app",
+      messagingSenderId: "1026658012382",
+      appId: "1:1026658012382:web:30d662f7f63cbed723864f",
+      measurementId: "G-TW5MKN63SV"
     };
 
-    // Initialize Firebase
     const app = initializeApp(firebaseConfig);
     const database = getDatabase(app);
-    
-    // Make Firebase available globally
-    window.firebase = { database, ref, set, get, onValue, push, remove, update };
+
+    // expose firebase helpers
+    window.firebase = {
+      database,
+      ref,
+      set,
+      get,
+      onValue,
+      push,
+      remove,
+      update
+    };
   </script>
 
-  <!-- External Libraries -->
+  <!-- External libraries -->
   <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
 
   <!-- Google Font -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
+    rel="stylesheet"
+  />
 
   <style>
-   /* ———————————————————————————————————————————————————————————————
-       Updated Color Palette
-       • Day Shift: Warm Amber
-       • Night Shift: Deep Indigo
-       • Primary / Accent adjusted for cohesion
-       ——————————————————————————————————————————————————————————————— */
+    /* ─────────────────────────────────────────────────────────
+       Color variables
+    ───────────────────────────────────────────────────────── */
     :root {
       --bg: #f8fafc;
       --card: #ffffff;
       --text: #1f2937;
       --muted: #4b5563;
       --border: #e5e7eb;
-      --shadow: 0 4px 12px rgba(0,0,0,0.05);
+      --border-strong: #cbd5e1;
+      --shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 
-      /* primary brand tones */
-      --primary: #0288d1;        /* Cerulean blue */
-      --accent: #26c6da;         /* Teal accent */
+      --primary: #0288d1;
+      --accent: #26c6da;
 
-      /* shifts */
-      --day-accent: #ffc107;     /* Amber */
-      --night-accent: #3f51b5;   /* Indigo */
+      --day-accent: #ffc107;
+      --night-accent: #3f51b5;
 
-      /* utility */
       --success: #16a34a;
       --warning: #f97316;
       --danger: #dc2626;
 
       --chip-bg: #f1f5f9;
       --chip-text: #1f2937;
+
       --radius: 10px;
     }
     [data-theme="dark"] {
@@ -76,14 +96,19 @@
       --text: #f1f5f9;
       --muted: #9ca3af;
       --border: #475569;
-      --shadow: 0 4px 12px rgba(0,0,0,0.6);
+      --border-strong: #64748b;
+      --shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
 
       --chip-bg: #475569;
       --chip-text: #f1f5f9;
     }
 
-    /* — Reset & Body — */
-    * { box-sizing: border-box; }
+    /* ─────────────────────────────────────────────────────────
+       Reset & body
+    ───────────────────────────────────────────────────────── */
+    * {
+      box-sizing: border-box;
+    }
     body {
       margin: 0;
       font-family: 'Inter', sans-serif;
@@ -92,9 +117,12 @@
       min-height: 100vh;
     }
 
-    /* — Header — */
+    /* ─────────────────────────────────────────────────────────
+       Header
+    ───────────────────────────────────────────────────────── */
     .app-header {
-      position: sticky; top: 0;
+      position: sticky;
+      top: 0;
       background: var(--card);
       border-bottom: 1px solid var(--border);
       padding: 14px 24px;
@@ -104,9 +132,14 @@
     .header-inner {
       max-width: 1100px;
       margin: 0 auto;
-      display: flex; justify-content: space-between; align-items: center;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
-    .brand { font-weight: 700; font-size: 20px; }
+    .brand {
+      font-weight: 700;
+      font-size: 20px;
+    }
     .theme-toggle {
       padding: 6px 12px;
       border: 1px solid var(--border);
@@ -120,71 +153,145 @@
       background: var(--primary);
       color: #fff;
     }
+    .status-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 13px;
+      color: var(--muted);
+      padding: 4px 8px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+    }
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #9ca3af;
+    }
+    .status-dot.connected {
+      background: #22c55e;
+    }
 
-    /* — Toasts — */
+    /* ─────────────────────────────────────────────────────────
+       Toast notifications
+    ───────────────────────────────────────────────────────── */
     .toast-wrap {
-      position: fixed; top: 16px; right: 16px;
-      display: grid; gap: 10px; z-index: 30;
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      display: grid;
+      gap: 10px;
+      z-index: 30;
     }
     .toast {
-      display: flex; align-items: center; gap: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
       padding: 10px 14px;
       background: var(--card);
       border: 1px solid var(--border);
       box-shadow: var(--shadow);
       border-left-width: 4px;
-      opacity: 1; animation: slideIn 0.2s ease forwards;
+      animation: slideIn 0.2s ease forwards;
       min-width: 240px;
+      border-radius: 8px;
     }
-    .toast.success { border-left-color: var(--success); }
-    .toast.info    { border-left-color: var(--primary); }
-    .toast.error   { border-left-color: var(--danger); }
+    .toast.success {
+      border-left-color: var(--success);
+    }
+    .toast.info {
+      border-left-color: var(--primary);
+    }
+    .toast.error {
+      border-left-color: var(--danger);
+    }
     @keyframes slideIn {
-      from { opacity: 0; transform: translateY(-8px); }
-      to   { opacity: 1; transform: translateY(0); }
+      from {
+        opacity: 0;
+        transform: translateY(-8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
-    /* — Alarm Notification — */
+    /* ─────────────────────────────────────────────────────────
+       Alarm notification
+    ───────────────────────────────────────────────────────── */
     .alarm-notification {
-      position: fixed; bottom: 24px; right: 24px;
-      background: var(--danger); color: #fff;
-      padding: 14px 16px; border-radius: var(--radius);
-      box-shadow: var(--shadow); display: none;
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--danger);
+      color: #fff;
+      padding: 14px 16px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      display: none;
       animation: pulse 2s infinite;
     }
     @keyframes pulse {
-      0%,100% { transform: scale(1); }
-      50%     { transform: scale(1.05); }
+      0%,
+      100% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.05);
+      }
     }
     .alarm-notification button {
       margin-top: 8px;
-      background: #fff; color: var(--danger);
-      border: none; padding: 6px 10px;
-      border-radius: 999px; cursor: pointer;
+      background: #fff;
+      color: var(--danger);
+      border: none;
+      padding: 6px 10px;
+      border-radius: 999px;
+      cursor: pointer;
       font-weight: 600;
     }
 
-    /* — Page & Title — */
+    /* ─────────────────────────────────────────────────────────
+       Page wrapper & title card
+    ───────────────────────────────────────────────────────── */
     .page {
       max-width: 1100px;
-      margin: 32px auto 120px; padding: 0 16px;
+      margin: 32px auto 120px;
+      padding: 0 16px;
     }
     .title-card {
       background: var(--card);
-      background-image: linear-gradient(135deg, var(--card) 0%, rgba(38,198,218,0.04) 100%);
-      border: 1px solid var(--border);
+      background-image: linear-gradient(
+        135deg,
+        var(--card) 0%,
+        rgba(38, 198, 218, 0.04) 100%
+      );
+      border: 2px solid var(--border-strong);
       border-left: 6px solid var(--accent);
       border-radius: var(--radius);
       box-shadow: var(--shadow);
-      padding: 24px; text-align: center;
+      padding: 24px;
+      text-align: center;
       margin-bottom: 24px;
     }
-    .report-title { font-size: 24px; font-weight: 700; }
-    .report-date  { font-size: 14px; color: var(--muted); }
+    .report-title {
+      font-size: 24px;
+      font-weight: 700;
+    }
+    .report-date {
+      font-size: 14px;
+      color: var(--muted);
+    }
 
-    /* — Tabs — */
+    /* ─────────────────────────────────────────────────────────
+       Shift tabs
+    ───────────────────────────────────────────────────────── */
     .shift-tabs {
-      display: flex; justify-content: center; gap: 12px; margin-top: 20px;
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 20px;
     }
     .shift-tab {
       position: relative;
@@ -201,13 +308,21 @@
     .shift-tab.day::before,
     .shift-tab.night::before {
       content: "";
-      position: absolute; top: 10px; left: 8px;
-      width: 8px; height: 8px; border-radius: 50%;
+      position: absolute;
+      top: 10px;
+      left: 8px;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
     }
-    .shift-tab.day::before   { background: var(--day-accent); }
-    .shift-tab.night::before { background: var(--night-accent); }
+    .shift-tab.day::before {
+      background: var(--day-accent);
+    }
+    .shift-tab.night::before {
+      background: var(--night-accent);
+    }
     .shift-tab:hover {
-      background: rgba(38,198,218,0.1);
+      background: rgba(38, 198, 218, 0.1);
       color: var(--text);
     }
     .shift-tab.active {
@@ -217,122 +332,229 @@
       border-bottom: 1px solid var(--card);
     }
 
-    /* — Shift Containers — */
+    /* ─────────────────────────────────────────────────────────
+       Shift container
+    ───────────────────────────────────────────────────────── */
     .shift-container {
       display: none;
       background: var(--card);
-      background-image: linear-gradient(135deg, var(--card) 0%, rgba(38,198,218,0.04) 100%);
-      border: 1px solid var(--border);
+      background-image: linear-gradient(
+        135deg,
+        var(--card) 0%,
+        rgba(38, 198, 218, 0.04) 100%
+      );
+      border: 2px solid var(--border-strong);
       border-radius: 0 var(--radius) var(--radius) var(--radius);
-      padding: 24px; box-shadow: var(--shadow);
+      padding: 24px;
+      box-shadow: var(--shadow);
       animation: slideDown 0.25s ease both;
     }
-    .shift-container.active { display: block; }
-    .shift-container.day-shift   { border-top: 6px solid var(--day-accent); }
-    .shift-container.night-shift { border-top: 6px solid var(--night-accent); }
+    .shift-container.active {
+      display: block;
+    }
+    .shift-container.day-shift {
+      border-top: 6px solid var(--day-accent);
+    }
+    .shift-container.night-shift {
+      border-top: 6px solid var(--night-accent);
+    }
     @keyframes slideDown {
-      from { opacity: 0; transform: translateY(-10px); }
-      to   { opacity: 1; transform: translateY(0); }
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
     }
 
     .shift-header {
-      display: flex; justify-content: space-between; align-items: center;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       margin-bottom: 20px;
     }
-    .shift-header h2 { font-size: 20px; font-weight: 700; margin: 0; }
+    .shift-header h2 {
+      font-size: 20px;
+      font-weight: 700;
+      margin: 0;
+    }
 
     .progress {
-      display: flex; align-items: center; gap: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
     .progress-bar {
       position: relative;
-      width: 240px; height: 8px;
-      background: rgba(107,114,128,0.2);
-      border-radius: 999px; overflow: hidden;
+      width: 240px;
+      height: 8px;
+      background: rgba(107, 114, 128, 0.2);
+      border-radius: 999px;
+      overflow: hidden;
     }
     .progress-fill {
-      position: absolute; inset: 0;
-      width: 0%; background: var(--accent);
+      position: absolute;
+      inset: 0;
+      width: 0%;
+      background: var(--accent);
       border-radius: 999px;
       transition: width 0.8s ease-out;
     }
     .progress-label {
-      width: 32px; text-align: right;
-      font-size: 12px; color: var(--muted);
+      width: 32px;
+      text-align: right;
+      font-size: 12px;
+      color: var(--muted);
     }
 
-    /* — Task List — */
+    /* ─────────────────────────────────────────────────────────
+       Task list
+    ───────────────────────────────────────────────────────── */
     .task-list {
-      list-style: none; padding: 0; margin: 0;
-      display: grid; gap: 12px;
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: grid;
+      gap: 12px;
     }
+
     .task-item {
       display: grid;
-      grid-template-columns: 120px 1fr 140px auto;
-      align-items: center; gap: 12px;
+      grid-template-columns: 120px 1fr 140px 100px auto;
+      align-items: center;
+      gap: 12px;
       padding: 14px;
       border: 1px solid var(--border);
       border-radius: var(--radius);
       background: #f9fafb;
       cursor: grab;
       animation: fadeIn 0.3s ease both;
-      transition: background 0.2s, box-shadow 0.2s;
+      transition: background 0.2s, box-shadow 0.2s, opacity 0.2s;
     }
     .task-item:hover {
-      background: rgba(255,193,7,0.1);
+      background: rgba(255, 193, 7, 0.1);
       box-shadow: var(--shadow);
     }
     .task-item.night-hover:hover {
-      background: rgba(63,81,181,0.1);
+      background: rgba(63, 81, 181, 0.1);
     }
-    /* Completed & Upcoming */
-    .task-item.completed { background: rgba(22,163,74,0.1); }
-    .task-item.upcoming  { border-color: var(--warning); background: rgba(249,115,22,0.1); }
+    .task-item.completed {
+      background: rgba(22, 163, 74, 0.1);
+    }
+    .task-item.completed .task-text {
+      text-decoration: line-through;
+    }
+    .task-item.upcoming {
+      border-color: var(--warning);
+      background: rgba(249, 115, 22, 0.1);
+    }
+    .task-item.locked {
+      cursor: not-allowed;
+      opacity: 0.9;
+    }
     @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(-6px); }
-      to   { opacity: 1; transform: translateY(0); }
+      from {
+        opacity: 0;
+        transform: translateY(-6px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Dim day tasks */
+    #day-shift-container .task-item {
+      background: #eff4f8;
+      box-shadow: none;
+    }
+    #day-shift-container .task-item:hover {
+      background: rgba(255, 193, 7, 0.06);
+      box-shadow: var(--shadow);
     }
 
     .task-time,
     .task-assignee {
-      font-size: 14px; font-weight: 500;
-      background: var(--chip-bg); color: var(--chip-text);
+      font-size: 14px;
+      font-weight: 500;
+      background: var(--chip-bg);
+      color: var(--chip-text);
       border: 1px solid var(--border);
-      padding: 6px 10px; border-radius: 999px;
-      text-align: center; white-space: nowrap;
+      padding: 6px 10px;
+      border-radius: 999px;
+      text-align: center;
+      white-space: nowrap;
     }
     .task-text {
-      font-size: 14px; color: var(--text); word-break: break-word;
+      font-size: 14px;
+      color: var(--text);
+      word-break: break-word;
+    }
+
+    .task-status {
+      font-size: 12px;
+      font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      text-align: center;
+    }
+    .task-status.completed {
+      background: rgba(22, 163, 74, 0.12);
+      color: var(--success);
+    }
+    .task-status.pending {
+      background: rgba(249, 115, 22, 0.12);
+      color: var(--warning);
     }
 
     .task-actions {
-      display: inline-flex; gap: 6px;
+      display: inline-flex;
+      gap: 6px;
     }
     .btn-icon {
-      width: 32px; height: 32px;
-      display: inline-grid; place-items: center;
+      width: 32px;
+      height: 32px;
+      display: inline-grid;
+      place-items: center;
       border: 1px solid var(--border);
       background: var(--card);
       border-radius: 8px;
       cursor: pointer;
-      transition: background 0.2s, box-shadow 0.2s;
+      transition: background 0.2s, box-shadow 0.2s, color 0.2s;
     }
     .btn-icon:hover {
-      background: var(--accent); color: #fff; box-shadow: var(--shadow);
+      background: var(--accent);
+      color: #fff;
+      box-shadow: var(--shadow);
     }
-    .btn-complete { color: var(--success); }
-    .btn-edit     { color: var(--warning); }
-    .btn-delete   { color: var(--danger); }
+    .btn-complete {
+      color: var(--success);
+    }
+    .btn-edit {
+      color: var(--warning);
+    }
+    .btn-delete {
+      color: var(--danger);
+    }
+    .btn-lock {
+      color: #0ea5e9;
+    }
 
-    /* — Add Task Form — */
+    /* ─────────────────────────────────────────────────────────
+       Add-task form
+    ───────────────────────────────────────────────────────── */
     .add-task-form {
       margin-top: 24px;
       display: grid;
       grid-template-columns: 200px 1fr 200px auto;
-      gap: 12px; padding: 16px;
-      border: 1px dashed var(--border);
+      gap: 12px;
+      padding: 16px;
+      border: 2px dashed var(--border-strong);
       border-radius: var(--radius);
-      background: rgba(38,198,218,0.05);
+      background: rgba(38, 198, 218, 0.05);
     }
     .add-task-form input,
     .add-task-form select {
@@ -352,22 +574,33 @@
       font-weight: 600;
       transition: background 0.2s;
     }
-    .add-btn:hover { background: var(--accent); }
-    .error-message {
-      color: var(--danger); font-size: 12px; display: none;
+    .add-btn:hover {
+      background: var(--accent);
     }
-    .error-border { border-color: var(--danger) !important; }
+    .error-message {
+      grid-column: 1 / -1;
+      color: var(--danger);
+      font-size: 12px;
+      display: none;
+    }
+    .error-border {
+      border-color: var(--danger) !important;
+    }
 
-    /* — Remarks — */
+    /* ─────────────────────────────────────────────────────────
+       Remarks
+    ───────────────────────────────────────────────────────── */
     .remarks-section {
       margin-top: 24px;
       padding: 16px;
-      border-left: 4px solid var(--accent);
-      background: rgba(38,198,218,0.05);
+      border: 2px solid var(--border-strong);
+      border-left: 6px solid var(--accent);
+      background: rgba(38, 198, 218, 0.05);
       border-radius: var(--radius);
     }
     .remarks-section textarea {
-      width: 100%; min-height: 100px;
+      width: 100%;
+      min-height: 100px;
       padding: 12px;
       border: 1px solid var(--border);
       border-radius: var(--radius);
@@ -376,15 +609,21 @@
       resize: vertical;
     }
 
-    /* — Action Bar — */
+    /* ─────────────────────────────────────────────────────────
+       Action bar
+    ───────────────────────────────────────────────────────── */
     .action-bar {
-      position: fixed; bottom: 16px; left: 50%;
+      position: fixed;
+      bottom: 16px;
+      left: 50%;
       transform: translateX(-50%);
       background: var(--card);
-      border: 1px solid var(--border);
+      border: 2px solid var(--border-strong);
       border-radius: 999px;
       box-shadow: var(--shadow);
-      padding: 8px; display: flex; gap: 12px;
+      padding: 8px;
+      display: flex;
+      gap: 12px;
       z-index: 20;
     }
     .action-bar .btn {
@@ -398,71 +637,113 @@
       transition: background 0.2s, color 0.2s;
     }
     .action-bar .btn:hover {
-      background: var(--accent); color: #fff;
+      background: var(--accent);
+      color: #fff;
     }
-    .btn.save  { background: var(--accent); color: #fff; border-color: transparent; }
-    .btn.clear { color: var(--danger); }
-    .btn.excel { background: var(--success); color: #fff; border-color: transparent; }
+    .btn.save {
+      background: var(--accent);
+      color: #fff;
+      border-color: transparent;
+    }
+    .btn.clear {
+      color: var(--danger);
+    }
+    .btn.excel {
+      background: var(--success);
+      color: #fff;
+      border-color: transparent;
+    }
 
-    /* — Modal — */
+    /* ─────────────────────────────────────────────────────────
+       Modal
+    ───────────────────────────────────────────────────────── */
     .modal {
-      display: none; position: fixed; inset: 0;
-      background: rgba(0,0,0,0.4); backdrop-filter: blur(4px);
-      padding: 20px; z-index: 40;
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.4);
+      backdrop-filter: blur(4px);
+      padding: 20px;
+      z-index: 40;
     }
     .modal-content {
-      max-width: 500px; margin: 8vh auto;
-      background: var(--card); border-radius: var(--radius);
-      box-shadow: var(--shadow); overflow: hidden;
+      max-width: 500px;
+      margin: 8vh auto;
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      border: 2px solid var(--border-strong);
     }
     .modal-header {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 16px; border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
     }
-    .modal-title { font-weight: 700; }
+    .modal-title {
+      font-weight: 700;
+    }
     .close-btn {
-      font-size: 20px; cursor: pointer; color: var(--muted);
+      font-size: 20px;
+      cursor: pointer;
+      color: var(--muted);
     }
     .modal-body {
-      padding: 16px; display: grid; gap: 12px;
+      padding: 16px;
+      display: grid;
+      gap: 12px;
     }
     .form-group label {
-      display: block; font-weight: 600; margin-bottom: 6px;
+      display: block;
+      font-weight: 600;
+      margin-bottom: 6px;
     }
     .form-group input,
     .form-group select {
-      width: 100%; padding: 10px 12px;
+      width: 100%;
+      padding: 10px 12px;
       border: 1px solid var(--border);
       border-radius: var(--radius);
       background: var(--card);
       color: var(--text);
     }
     .modal-footer {
-      display: flex; justify-content: flex-end; gap: 8px;
-      padding: 14px 18px; border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      padding: 14px 18px;
+      border-top: 1px solid var(--border);
     }
     .modal-btn {
-      padding: 8px 16px; border: 1px solid var(--border);
-      background: var(--card); cursor: pointer;
-      border-radius: var(--radius); font-weight: 600;
+      padding: 8px 16px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      cursor: pointer;
+      border-radius: var(--radius);
+      font-weight: 600;
       transition: background 0.2s, color 0.2s;
     }
     .modal-btn:hover {
-      background: var(--accent); color: #fff;
+      background: var(--accent);
+      color: #fff;
     }
     .modal-btn-primary {
-      background: var(--accent); color: #fff; border-color: transparent;
+      background: var(--accent);
+      color: #fff;
+      border-color: transparent;
     }
   </style>
 </head>
 <body>
-  <!-- HEADER -->
+  <!-- Header bar -->
   <header class="app-header">
     <div class="header-inner">
       <div class="brand">Operations Center</div>
       <div style="display: flex; gap: 12px; align-items: center;">
         <div class="status-indicator">
-          <span class="status-dot" id="connectionStatus"></span>
+          <span id="connectionStatus" class="status-dot"></span>
           <span id="connectionText">Connecting...</span>
         </div>
         <button id="themeToggle" class="theme-toggle">Toggle Theme</button>
@@ -470,30 +751,36 @@
     </div>
   </header>
 
-  <!-- TOASTS -->
+  <!-- Toast container -->
   <div id="toastWrap" class="toast-wrap"></div>
 
-  <!-- ALARM -->
+  <!-- Alarm pop-up -->
   <div id="alarmNotification" class="alarm-notification">
     <div><strong>Upcoming Task</strong></div>
     <div id="alarmMessage" style="margin-top:8px;"></div>
     <button onclick="closeAlarm()">Dismiss</button>
   </div>
 
-  <!-- MAIN CONTENT -->
   <main class="page">
     <div id="checklist-content">
       <div class="title-card">
         <div class="report-title">Operations Center Checklist</div>
         <div class="report-date">Stay focused. Stay efficient.</div>
         <div class="shift-tabs">
-          <div class="shift-tab day active" onclick="showShift('day')">Day Shift</div>
-          <div class="shift-tab night" onclick="showShift('night')">Night Shift</div>
+          <div class="shift-tab day active" onclick="showShift('day')">
+            Day Shift
+          </div>
+          <div class="shift-tab night" onclick="showShift('night')">
+            Night Shift
+          </div>
         </div>
       </div>
 
-      <!-- DAY SHIFT -->
-      <div id="day-shift-container" class="shift-container day-shift active">
+      <!-- Day Shift Section -->
+      <div
+        id="day-shift-container"
+        class="shift-container day-shift active"
+      >
         <div class="shift-header">
           <h2>Day Shift</h2>
           <div class="progress">
@@ -507,7 +794,12 @@
 
         <div class="add-task-form">
           <input type="datetime-local" id="day-shift-new-time" required />
-          <input type="text" id="day-shift-new-task" placeholder="Task description" required />
+          <input
+            type="text"
+            id="day-shift-new-task"
+            placeholder="Task description"
+            required
+          />
           <select id="day-shift-new-assignee" class="assignee-select" required>
             <option value="">Select Assignee</option>
           </select>
@@ -518,11 +810,15 @@
         </div>
 
         <div class="remarks-section">
-          <textarea id="day-shift-remarks" placeholder="Enter remarks..." onblur="saveRemarks('day')"></textarea>
+          <textarea
+            id="day-shift-remarks"
+            placeholder="Enter remarks..."
+            onblur="saveRemarks('day')"
+          ></textarea>
         </div>
       </div>
 
-      <!-- NIGHT SHIFT -->
+      <!-- Night Shift Section -->
       <div id="night-shift-container" class="shift-container night-shift">
         <div class="shift-header">
           <h2>Night Shift</h2>
@@ -537,34 +833,53 @@
 
         <div class="add-task-form">
           <input type="datetime-local" id="night-shift-new-time" required />
-          <input type="text" id="night-shift-new-task" placeholder="Task description" required />
-          <select id="night-shift-new-assignee" class="assignee-select" required>
+          <input
+            type="text"
+            id="night-shift-new-task"
+            placeholder="Task description"
+            required
+          />
+          <select
+            id="night-shift-new-assignee"
+            class="assignee-select"
+            required
+          >
             <option value="">Select Assignee</option>
           </select>
-          <button class="add-btn" onclick="addTask('night')">Add Task</button>
+          <button class="add-btn" onclick="addTask('night')">
+            Add Task
+          </button>
           <div id="night-shift-assignee-error" class="error-message">
             Please select an assignee
           </div>
         </div>
 
         <div class="remarks-section">
-          <textarea id="night-shift-remarks" placeholder="Enter remarks..." onblur="saveRemarks('night')"></textarea>
+          <textarea
+            id="night-shift-remarks"
+            placeholder="Enter remarks..."
+            onblur="saveRemarks('night')"
+          ></textarea>
         </div>
       </div>
     </div>
   </main>
 
-  <!-- ACTION BAR -->
+  <!-- Action bar -->
   <div class="action-bar">
     <button class="btn" onclick="syncData()">Sync Now</button>
     <button class="btn sort" onclick="sortTasks()">Sort by Time</button>
     <button class="btn clear" onclick="clearAllTasks()">Clear All Tasks</button>
-    <button class="btn" onclick="downloadChecklist('day')">Download Day Shift</button>
-    <button class="btn" onclick="downloadChecklist('night')">Download Night Shift</button>
+    <button class="btn" onclick="downloadChecklist('day')">
+      Download Day Shift
+    </button>
+    <button class="btn" onclick="downloadChecklist('night')">
+      Download Night Shift
+    </button>
     <button class="btn excel" onclick="exportToExcel()">Export to Excel</button>
   </div>
 
-  <!-- EDIT TASK MODAL -->
+  <!-- Edit modal -->
   <div id="editTaskModal" class="modal" role="dialog" aria-modal="true">
     <div class="modal-content">
       <div class="modal-header">
@@ -592,226 +907,273 @@
       </div>
       <div class="modal-footer">
         <button class="modal-btn" id="cancel-edit-btn">Cancel</button>
-        <button class="modal-btn modal-btn-primary" id="save-edit-btn">Save Changes</button>
+        <button class="modal-btn modal-btn-primary" id="save-edit-btn">
+          Save Changes
+        </button>
       </div>
     </div>
   </div>
 
   <script>
-    // ─────────────────────────────────────────────────────────────────────────
-    // FIREBASE INTEGRATION
-    // ─────────────────────────────────────────────────────────────────────────
-
-    const assignees = [
-      "Geron","John Mick","Nelson","Jeremiah",
-      "Anna","Judy","Joyce","Ceriaco",
-      "Jonnie","Danica","Jake","Joseph"
-    ].sort(() => Math.random() - 0.5);
-
-    const dayTasksEl   = document.getElementById('day-shift-tasks');
-    const nightTasksEl = document.getElementById('night-shift-tasks');
-    const modal        = document.getElementById('editTaskModal');
-    let currentEditShift = '', currentEditIndex = -1;
+    // Task storage
     let tasks = { day: [], night: [] };
     let remarks = { day: '', night: '' };
     let isConnected = false;
-
-    // Firebase references
+    let currentEditShift = '', currentEditIndex = -1;
     let tasksRef, remarksRef;
+
+    // Randomized assignees
+    const assignees = [
+      'Geron',
+      'John Mick',
+      'Nelson',
+      'Jeremiah',
+      'Anna',
+      'Judy',
+      'Joyce',
+      'Ceriaco',
+      'Jonnie',
+      'Danica',
+      'Jake',
+      'Joseph'
+    ].sort(() => Math.random() - 0.5);
+
+    const dayTasksEl = document.getElementById('day-shift-tasks');
+    const nightTasksEl = document.getElementById('night-shift-tasks');
+    const modal = document.getElementById('editTaskModal');
 
     window.onload = async () => {
       initTheme();
       populateAssignees();
+      initDateTimeInputs();
       await initFirebase();
       bindEditModal();
       startAlarmChecker();
     };
 
+    //─────────────────────────────────────────────────────────────────────────
+    // Firebase init and listeners
     async function initFirebase() {
       try {
         const { database, ref, onValue } = window.firebase;
-        
-        // Initialize references
         tasksRef = ref(database, 'shiftTasks');
         remarksRef = ref(database, 'shiftRemarks');
-        
-        // Listen for connection status
+
+        // connection status
         const connectedRef = ref(database, '.info/connected');
-        onValue(connectedRef, (snapshot) => {
-          isConnected = snapshot.val() === true;
+        onValue(connectedRef, snap => {
+          isConnected = snap.val() === true;
           updateConnectionStatus();
         });
 
-        // Listen for tasks changes
-        onValue(tasksRef, (snapshot) => {
-          const data = snapshot.val();
-          if (data) {
-            tasks = { day: data.day || [], night: data.night || [] };
-            adjustDates();
-            renderTasks();
-          }
+        // tasks updates
+        onValue(tasksRef, snap => {
+          const data = snap.val() || {};
+          tasks.day = (data.day || []).map(_backfill);
+          tasks.night = (data.night || []).map(_backfill);
+          anchorDatesToToday();
+          renderAll();
         });
 
-        // Listen for remarks changes
-        onValue(remarksRef, (snapshot) => {
-          const data = snapshot.val();
-          if (data) {
-            remarks = data;
-            document.getElementById('day-shift-remarks').value = remarks.day || '';
-            document.getElementById('night-shift-remarks').value = remarks.night || '';
-          }
+        // remarks updates
+        onValue(remarksRef, snap => {
+          const data = snap.val() || {};
+          remarks.day = data.day || '';
+          remarks.night = data.night || '';
+          document.getElementById('day-shift-remarks').value = remarks.day;
+          document.getElementById('night-shift-remarks').value =
+            remarks.night;
         });
 
         showToast('Connected to Firebase', 'success');
-      } catch (error) {
-        console.error('Firebase initialization failed:', error);
-        showToast('Firebase connection failed. Check your config.', 'error');
-        // Fall back to localStorage
-        loadFromLocalStorage();
+      } catch (e) {
+        console.error(e);
+        showToast(
+          'Firebase failed; using localStorage fallback.',
+          'error'
+        );
+        loadLocal();
       }
+    }
+
+    function _backfill(t) {
+      return {
+        ...t,
+        completed: !!t.completed,
+        locked: !!t.locked
+      };
     }
 
     function updateConnectionStatus() {
-      const statusDot = document.getElementById('connectionStatus');
-      const statusText = document.getElementById('connectionText');
-      
+      const dot = document.getElementById('connectionStatus');
+      const txt = document.getElementById('connectionText');
       if (isConnected) {
-        statusDot.classList.add('connected');
-        statusText.textContent = 'Connected';
+        dot.classList.add('connected');
+        txt.textContent = 'Connected';
       } else {
-        statusDot.classList.remove('connected');
-        statusText.textContent = 'Offline';
+        dot.classList.remove('connected');
+        txt.textContent = 'Offline';
       }
     }
 
-    async function saveTasksToFirebase() {
-      if (!isConnected || !window.firebase) {
-        showToast('Saving locally - no connection', 'info');
+    async function saveTasks() {
+      if (!isConnected) {
         localStorage.setItem('shiftTasks', JSON.stringify(tasks));
+        showToast('Saved locally', 'info');
         return;
       }
-
       try {
-        const { set } = window.firebase;
-        await set(tasksRef, tasks);
-        showToast('Tasks synced to cloud', 'success');
-      } catch (error) {
-        console.error('Failed to save to Firebase:', error);
-        showToast('Failed to sync - saved locally', 'error');
+        await window.firebase.set(tasksRef, tasks);
+        showToast('Synced tasks', 'success');
+      } catch (e) {
+        console.error(e);
         localStorage.setItem('shiftTasks', JSON.stringify(tasks));
+        showToast('Sync failed → saved locally', 'error');
       }
     }
 
     async function saveRemarks(shift) {
-      const value = document.getElementById(`${shift}-shift-remarks`).value;
-      remarks[shift] = value;
-
-      if (!isConnected || !window.firebase) {
-        localStorage.setItem('shiftRemarks', JSON.stringify(remarks));
-        return;
-      }
-
-      try {
-        const { set } = window.firebase;
-        await set(remarksRef, remarks);
-      } catch (error) {
-        console.error('Failed to save remarks:', error);
-        localStorage.setItem('shiftRemarks', JSON.stringify(remarks));
-      }
-    }
-
-    function loadFromLocalStorage() {
-      const savedTasks = localStorage.getItem('shiftTasks');
-      if (savedTasks) tasks = JSON.parse(savedTasks);
-      
-      const savedRemarks = localStorage.getItem('shiftRemarks');
-      if (savedRemarks) {
-        remarks = JSON.parse(savedRemarks);
-        document.getElementById('day-shift-remarks').value = remarks.day || '';
-        document.getElementById('night-shift-remarks').value = remarks.night || '';
-      }
-      
-      adjustDates();
-      renderTasks();
-    }
-
-    async function syncData() {
+      remarks[shift] = document.getElementById(
+        `${shift}-shift-remarks`
+      ).value;
       if (!isConnected) {
-        showToast('No internet connection', 'error');
+        localStorage.setItem('shiftRemarks', JSON.stringify(remarks));
         return;
       }
-      
       try {
-        await saveTasksToFirebase();
-        showToast('Data synchronized', 'success');
-      } catch (error) {
-        showToast('Sync failed', 'error');
+        await window.firebase.set(remarksRef, remarks);
+      } catch {
+        localStorage.setItem('shiftRemarks', JSON.stringify(remarks));
       }
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // EXISTING APPLICATION LOGIC (Updated for Firebase)
-    // ─────────────────────────────────────────────────────────────────────────
+    function loadLocal() {
+      const t = localStorage.getItem('shiftTasks');
+      if (t) tasks = JSON.parse(t);
+      const r = localStorage.getItem('shiftRemarks');
+      if (r) {
+        remarks = JSON.parse(r);
+        document.getElementById('day-shift-remarks').value =
+          remarks.day;
+        document.getElementById('night-shift-remarks').value =
+          remarks.night;
+      }
+      tasks.day = tasks.day.map(_backfill);
+      tasks.night = tasks.night.map(_backfill);
+      anchorDatesToToday();
+      renderAll();
+    }
 
+    function syncNow() {
+      if (!isConnected) return showToast('No internet', 'error');
+      saveTasks().then(() => showToast('Synced', 'success'));
+    }
+
+    //─────────────────────────────────────────────────────────────────────────
+    // Theme toggle
     function initTheme() {
-      const btn  = document.getElementById('themeToggle');
+      const btn = document.getElementById('themeToggle');
       const root = document.documentElement;
       const saved = localStorage.getItem('theme') || 'light';
       root.setAttribute('data-theme', saved);
       btn.onclick = () => {
-        const next = root.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+        const next = root.getAttribute('data-theme') === 'light'
+          ? 'dark'
+          : 'light';
         root.setAttribute('data-theme', next);
         localStorage.setItem('theme', next);
       };
     }
 
+    //─────────────────────────────────────────────────────────────────────────
+    // Populate assignee selects
     function populateAssignees() {
-      document.querySelectorAll('.assignee-select, #edit-task-assignee')
-        .forEach(select => {
-          while (select.options.length > 1) select.remove(1);
-          assignees.forEach(name => {
-            const opt = document.createElement('option');
-            opt.value = name; opt.textContent = name;
-            select.appendChild(opt);
-          });
+      document.querySelectorAll(
+        '.assignee-select, #edit-task-assignee'
+      ).forEach(sel => {
+        while (sel.options.length > 1) sel.remove(1);
+        assignees.forEach(name => {
+          const o = document.createElement('option');
+          o.value = name;
+          o.textContent = name;
+          sel.appendChild(o);
         });
-    }
-
-    function adjustDates() {
-      const now = new Date();
-      ['day','night'].forEach(s => {
-        tasks[s].forEach(t => {
-          const d = new Date(t.time);
-          d.setFullYear(now.getFullYear(), now.getMonth(), now.getDate());
-          t.time = d.toISOString().slice(0,16);
-        });
-        document.getElementById(`${s}-shift-new-time`).value = now.toISOString().slice(0,16);
       });
     }
 
-    function renderTasks() {
+    //─────────────────────────────────────────────────────────────────────────
+    // Date anchoring helpers
+    function toLocalInput(dt = new Date()) {
+      dt.setSeconds(0, 0);
+      const pad = n => String(n).padStart(2, '0');
+      const y = dt.getFullYear();
+      const m = pad(dt.getMonth() + 1);
+      const d = pad(dt.getDate());
+      const hh = pad(dt.getHours());
+      const mm = pad(dt.getMinutes());
+      return `${y}-${m}-${d}T${hh}:${mm}`;
+    }
+
+    function anchorDatesToToday() {
+      tasks.day.forEach(t => {
+        const dt = new Date(t.time);
+        const now = new Date();
+        dt.setFullYear(now.getFullYear(), now.getMonth(), now.getDate());
+        t.time = dt.toISOString().slice(0, 16);
+      });
+      tasks.night.forEach(t => {
+        const dt = new Date(t.time);
+        const now = new Date();
+        dt.setFullYear(now.getFullYear(), now.getMonth(), now.getDate());
+        t.time = dt.toISOString().slice(0, 16);
+      });
+      setDefaultInputs();
+    }
+
+    function setDefaultInputs() {
+      document.getElementById('day-shift-new-time').value = toLocalInput();
+      document.getElementById('night-shift-new-time').value = toLocalInput();
+    }
+
+    function initDateTimeInputs() {
+      setDefaultInputs();
+    }
+
+    //─────────────────────────────────────────────────────────────────────────
+    // Rendering
+    function renderAll() {
       renderShift('day');
       renderShift('night');
-      setupDragAndDrop();
+      bindDrag();
     }
 
     function renderShift(shift) {
-      const list = shift==='day'? dayTasksEl : nightTasksEl;
+      const list = shift === 'day' ? dayTasksEl : nightTasksEl;
       list.innerHTML = '';
-      tasks[shift].forEach((t,i) => {
+      tasks[shift].forEach((t, i) => {
         const li = document.createElement('li');
-        li.className = `task-item${t.completed?' completed':''}`;
-        li.draggable = true;
+        li.className = `task-item${t.completed ? ' completed' : ''}${
+          t.locked ? ' locked' : ''
+        }`;
+        li.draggable = !t.locked;
         li.dataset.shift = shift;
         li.dataset.index = i;
+
+        const status = t.completed ? 'Completed' : 'Pending';
+        const cls = t.completed ? 'completed' : 'pending';
+        const lockIcon = t.locked ? '🔒' : '🔓';
+        const lockTitle = t.locked ? 'Unlock' : 'Lock';
+
         li.innerHTML = `
           <span class="task-time">${formatDisplay(t.time)}</span>
-          <span class="task-text">${t.text}</span>
-          <span class="task-assignee">${t.assignee}</span>
+          <span class="task-text">${escapeHtml(t.text)}</span>
+          <span class="task-assignee">${escapeHtml(t.assignee)}</span>
+          <span class="task-status ${cls}">${status}</span>
           <div class="task-actions">
-            <button class="btn-icon btn-complete" onclick="toggleComplete('${shift}',${i})">✓</button>
-            <button class="btn-icon btn-edit"     onclick="openEditModal('${shift}',${i})">✎</button>
-            <button class="btn-icon btn-delete"   onclick="deleteTask('${shift}',${i})">✕</button>
+            <button class="btn-icon btn-lock" title="${lockTitle}" onclick="toggleLock('${shift}', ${i})">${lockIcon}</button>
+            <button class="btn-icon btn-complete" title="Toggle Complete" onclick="toggleComplete('${shift}', ${i})">✓</button>
+            <button class="btn-icon btn-edit" title="Edit Task" onclick="openEditModal('${shift}', ${i})">✎</button>
+            <button class="btn-icon btn-delete" title="Delete Task" onclick="deleteTask('${shift}', ${i})">✕</button>
           </div>`;
         list.appendChild(li);
       });
@@ -819,301 +1181,395 @@
     }
 
     function updateProgress(shift) {
-      const done = tasks[shift].filter(t=>t.completed).length;
-      const pct  = tasks[shift].length? Math.round(done/tasks[shift].length*100):0;
-      document.getElementById(`${shift}-progress`).style.width = pct+'%';
-      document.getElementById(`${shift}-progress-label`).textContent = pct+'%';
+      const done = tasks[shift].filter(t => t.completed).length;
+      const pct = tasks[shift].length
+        ? Math.round((done / tasks[shift].length) * 100)
+        : 0;
+      document.getElementById(`${shift}-progress`).style.width = pct + '%';
+      document.getElementById(
+        `${shift}-progress-label`
+      ).textContent = pct + '%';
     }
 
+    //─────────────────────────────────────────────────────────────────────────
+    // Task actions
     async function addTask(shift) {
       const tm = document.getElementById(`${shift}-shift-new-time`);
-      const tx = document.getElementById(`${shift}-shift-new-task`);
-      const sel= document.getElementById(`${shift}-shift-new-assignee`);
-      const err= document.getElementById(`${shift}-shift-assignee-error`);
-      
-      sel.classList.remove('error-border'); 
-      err.style.display='none';
-      
-      if (!tm.value||!tx.value) { 
-        showToast('Enter time & description','error'); 
-        return; 
+      const txt = document.getElementById(`${shift}-shift-new-task`);
+      const sel = document.getElementById(`${shift}-shift-new-assignee`);
+      const err = document.getElementById(
+        `${shift}-shift-assignee-error`
+      );
+      sel.classList.remove('error-border');
+      err.style.display = 'none';
+
+      if (!tm.value || !txt.value) {
+        return showToast('Enter time & text', 'error');
       }
       if (!sel.value) {
         sel.classList.add('error-border');
-        err.style.display='block';
-        showToast('Select assignee','error');
-        return;
+        err.style.display = 'block';
+        return showToast('Select assignee', 'error');
       }
-      
-      const newTask = {
-        time: tm.value, 
-        text: tx.value, 
-        assignee: sel.value, 
+
+      const newT = {
+        time: tm.value,
+        text: txt.value,
+        assignee: sel.value,
         completed: false,
-        id: Date.now().toString() // Add unique ID for Firebase
+        locked: false,
+        id: Date.now().toString()
       };
-      
-      tasks[shift].push(newTask);
-      
-      tm.value = new Date().toISOString().slice(0,16);
-      tx.value = ''; 
+      tasks[shift].push(newT);
+
+      setDefaultInputs();
+      txt.value = '';
       sel.value = '';
-      
-      renderTasks(); 
-      await saveTasksToFirebase();
-      showToast('Task added','success');
+
+      renderAll();
+      await saveTasks();
+      showToast('Task added', 'success');
     }
 
-    async function toggleComplete(s,i) {
+    async function toggleComplete(s, i) {
       tasks[s][i].completed = !tasks[s][i].completed;
-      renderTasks();
-      await saveTasksToFirebase();
+      renderAll();
+      await saveTasks();
     }
 
-    async function deleteTask(s,i) {
+    async function toggleLock(s, i) {
+      tasks[s][i].locked = !tasks[s][i].locked;
+      renderAll();
+      await saveTasks();
+      showToast(
+        tasks[s][i].locked ? 'Task locked' : 'Task unlocked',
+        'info'
+      );
+    }
+
+    async function deleteTask(s, i) {
       if (!confirm('Delete this task?')) return;
-      tasks[s].splice(i,1);
-      renderTasks(); 
-      await saveTasksToFirebase();
-      showToast('Task deleted','info');
+      tasks[s].splice(i, 1);
+      renderAll();
+      await saveTasks();
+      showToast('Task deleted', 'info');
     }
 
     async function sortTasks() {
-      ['day','night'].forEach(s => {
-        tasks[s].sort((a,b)=> new Date(a.time)-new Date(b.time));
-      });
-      renderTasks(); 
-      await saveTasksToFirebase();
-      showToast('Tasks sorted','info');
+      ['day', 'night'].forEach(s =>
+        tasks[s].sort((a, b) => new Date(a.time) - new Date(b.time))
+      );
+      renderAll();
+      await saveTasks();
+      showToast('Tasks sorted', 'info');
     }
 
     async function clearAllTasks() {
-      if (!confirm('Clear all tasks and remarks?')) return;
-      tasks.day=[]; 
-      tasks.night=[];
-      remarks={day:'',night:''};
-      document.getElementById('day-shift-remarks').value='';
-      document.getElementById('night-shift-remarks').value='';
-      renderTasks(); 
-      await saveTasksToFirebase();
+      if (!confirm('Clear all tasks & remarks?')) return;
+      tasks = { day: [], night: [] };
+      remarks = { day: '', night: '' };
+      document.getElementById('day-shift-remarks').value = '';
+      document.getElementById('night-shift-remarks').value = '';
+      renderAll();
+      await saveTasks();
       await saveRemarks('day');
       await saveRemarks('night');
-      showToast('All data cleared','info');
+      showToast('All cleared', 'info');
     }
 
+    //─────────────────────────────────────────────────────────────────────────
+    // Edit modal
     function bindEditModal() {
-      document.getElementById('cancel-edit-btn').onclick = closeEditModal;
-      document.getElementById('save-edit-btn').onclick   = saveEdit;
-      modal.onclick = e => { if (e.target===modal) closeEditModal(); };
+      document.getElementById('cancel-edit-btn').onclick =
+        closeEditModal;
+      document.getElementById('save-edit-btn').onclick = saveEdit;
+      modal.onclick = e => {
+        if (e.target === modal) closeEditModal();
+      };
     }
 
-    function openEditModal(shift,i) {
-      currentEditShift = shift; 
-      currentEditIndex = i;
-      const t = tasks[shift][i];
-      document.getElementById('edit-task-time').value     = t.time;
-      document.getElementById('edit-task-text').value     = t.text;
-      document.getElementById('edit-task-assignee').value = t.assignee;
-      document.getElementById('edit-task-assignee').classList.remove('error-border');
-      document.getElementById('edit-task-assignee-error').style.display='none';
-      modal.style.display='block';
+    function openEditModal(shift, idx) {
+      currentEditShift = shift;
+      currentEditIndex = idx;
+      const t = tasks[shift][idx];
+      document.getElementById('edit-task-time').value = t.time;
+      document.getElementById('edit-task-text').value = t.text;
+      document.getElementById(
+        'edit-task-assignee'
+      ).value = t.assignee;
+      document
+        .getElementById('edit-task-assignee')
+        .classList.remove('error-border');
+      document.getElementById(
+        'edit-task-assignee-error'
+      ).style.display = 'none';
+      modal.style.display = 'block';
     }
 
     async function saveEdit() {
       const tm = document.getElementById('edit-task-time');
       const tx = document.getElementById('edit-task-text');
-      const sel= document.getElementById('edit-task-assignee');
-      const err= document.getElementById('edit-task-assignee-error');
-      
-      sel.classList.remove('error-border'); 
-      err.style.display='none';
-      
-      if (!tm.value||!tx.value) { 
-        showToast('Enter time & description','error'); 
-        return; 
+      const sel = document.getElementById('edit-task-assignee');
+      const err = document.getElementById(
+        'edit-task-assignee-error'
+      );
+      sel.classList.remove('error-border');
+      err.style.display = 'none';
+
+      if (!tm.value || !tx.value) {
+        return showToast('Enter time & text', 'error');
       }
       if (!sel.value) {
         sel.classList.add('error-border');
-        err.style.display='block';
-        showToast('Select assignee','error');
-        return;
+        err.style.display = 'block';
+        return showToast('Select assignee', 'error');
       }
-      
+
       const t = tasks[currentEditShift][currentEditIndex];
-      t.time = tm.value; 
-      t.text = tx.value; 
+      t.time = tm.value;
+      t.text = tx.value;
       t.assignee = sel.value;
-      
-      closeEditModal(); 
-      renderTasks(); 
-      await saveTasksToFirebase();
-      showToast('Task updated','success');
+      closeEditModal();
+      renderAll();
+      await saveTasks();
+      showToast('Task updated', 'success');
     }
 
-    function closeEditModal() { 
-      modal.style.display='none'; 
+    function closeEditModal() {
+      modal.style.display = 'none';
     }
 
+    //─────────────────────────────────────────────────────────────────────────
+    // Downloads
     function downloadChecklist(shift) {
-      const hdr = document.querySelector('.app-header');
-      const bar = document.querySelector('.action-bar');
-      hdr.style.display='none'; 
-      bar.style.display='none';
+      const h = document.querySelector('.app-header');
+      const a = document.querySelector('.action-bar');
+      h.style.display = 'none';
+      a.style.display = 'none';
       showShift(shift);
-      
-      html2canvas(document.getElementById('checklist-content'), {
-        scale: window.devicePixelRatio*2,
-        useCORS: true,
-        backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--bg').trim()
-      }).then(canvas=>{
-        const link=document.createElement('a');
-        link.download=`${shift}-shift-${new Date().toISOString().slice(0,10)}.png`;
-        link.href=canvas.toDataURL('image/png');
-        link.click();
-        showToast(`${shift} shift downloaded`, 'success');
-      }).finally(()=>{
-        hdr.style.display=''; 
-        bar.style.display='';
-        showShift('day');
-      });
+
+      html2canvas(
+        document.getElementById('checklist-content'),
+        {
+          scale: window.devicePixelRatio * 2,
+          useCORS: true,
+          backgroundColor: getComputedStyle(
+            document.documentElement
+          )
+            .getPropertyValue('--bg')
+            .trim()
+        }
+      )
+        .then(canvas => {
+          const link = document.createElement('a');
+          link.download = `${shift}-shift-${new Date()
+            .toISOString()
+            .slice(0, 10)}.png`;
+          link.href = canvas.toDataURL('image/png');
+          link.click();
+          showToast(`${shift} downloaded`, 'success');
+        })
+        .finally(() => {
+          h.style.display = '';
+          a.style.display = '';
+          showShift('day');
+        });
     }
 
     async function exportToExcel() {
       try {
-        const wb=new ExcelJS.Workbook();
-        wb.creator='Ops Center'; 
-        wb.created=new Date();
-        
-        function createSheet(name,data,rem) {
-          const ws=wb.addWorksheet(`${name} Shift`);
+        const wb = new ExcelJS.Workbook();
+        wb.creator = 'Ops Center';
+        wb.created = new Date();
+
+        function sheetify(n, arr, rem) {
+          const ws = wb.addWorksheet(`${n} Shift`);
           ws.mergeCells('A1:E1');
-          ws.getCell('A1').value=`${name.toUpperCase()} SHIFT CHECKLIST`;
-          ws.getCell('A1').font={bold:true,size:14};
+          ws.getCell('A1').value = `${n.toUpperCase()} SHIFT CHECKLIST`;
+          ws.getCell('A1').font = { bold: true, size: 14 };
           ws.mergeCells('A2:B2');
-          ws.getCell('A2').value=`Date: ${new Date().toLocaleDateString()}`;
-          
-          const hdr=['Time','Description','Assignee','Status','Notes'];
-          const hr=ws.addRow(hdr);
-          hr.font={bold:true};
-          hr.eachCell(c=>{
-            c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FFD3D3D3'}};
-            c.border={top:{style:'thin'},left:{style:'thin'},bottom:{style:'thin'}, right:{style:'thin'}};
-            c.alignment={horizontal:'center'};
+          ws.getCell('A2').value = `Date: ${new Date().toLocaleDateString()}`;
+
+          const headers = ['Time', 'Description', 'Assignee', 'Status', 'Notes'];
+          const hr = ws.addRow(headers);
+          hr.font = { bold: true };
+          hr.eachCell(c => {
+            c.fill = {
+              type: 'pattern',
+              pattern: 'solid',
+              fgColor: { argb: 'FFD3D3D3' }
+            };
+            c.border = {
+              top: { style: 'thin' },
+              left: { style: 'thin' },
+              bottom: { style: 'thin' },
+              right: { style: 'thin' }
+            };
+            c.alignment = { horizontal: 'center' };
           });
-          
-          data.forEach(t=>{
-            const row=ws.addRow([
-              formatExcel(t.time),t.text,t.assignee,
-              t.completed?'Completed':'Pending',''
+
+          arr.forEach(t => {
+            const row = ws.addRow([
+              formatExcel(t.time),
+              t.text,
+              t.assignee,
+              t.completed ? 'Completed' : 'Pending',
+              ''
             ]);
-            if(t.completed) row.eachCell(c=>c.font={color:{argb:'FF16A34A'}});
+            if (t.completed) {
+              row.eachCell(c => {
+                c.font = { color: { argb: 'FF16A34A' } };
+              });
+            }
           });
-          
-          ws.addRow([]); 
-          ws.addRow(['Remarks:',rem]);
-          ws.columns=[{width:20},{width:40},{width:20},{width:12},{width:30}];
+
+          ws.addRow([]);
+          ws.addRow(['Remarks:', rem]);
+          ws.columns = [
+            { width: 20 },
+            { width: 40 },
+            { width: 20 },
+            { width: 12 },
+            { width: 30 }
+          ];
         }
-        
-        createSheet('Day', tasks.day, remarks.day);
-        createSheet('Night', tasks.night, remarks.night);
-        
-        const buf=await wb.xlsx.writeBuffer();
-        saveAs(new Blob([buf],{type:'application/octet-stream'}),
-          `Shift_Report_${new Date().toISOString().slice(0,10)}.xlsx`);
-        showToast('Excel exported','success');
-      } catch (error) {
-        console.error('Excel export failed:', error);
-        showToast('Excel export failed','error');
+
+        sheetify('Day', tasks.day, remarks.day);
+        sheetify('Night', tasks.night, remarks.night);
+
+        const buf = await wb.xlsx.writeBuffer();
+        saveAs(
+          new Blob([buf], { type: 'application/octet-stream' }),
+          `Shift_Report_${new Date().toISOString().slice(0, 10)}.xlsx`
+        );
+        showToast('Excel exported', 'success');
+      } catch (e) {
+        console.error(e);
+        showToast('Excel failed', 'error');
       }
     }
 
-    function showShift(shift) {
-      document.querySelectorAll('.shift-tab').forEach(t=>t.classList.remove('active'));
-      document.querySelectorAll('.shift-container').forEach(c=>c.classList.remove('active'));
-      document.querySelector(`.shift-tab.${shift}`).classList.add('active');
-      document.getElementById(`${shift}-shift-container`).classList.add('active');
+    //─────────────────────────────────────────────────────────────────────────
+    // Shift toggle
+    function showShift(s) {
+      document
+        .querySelectorAll('.shift-tab')
+        .forEach(el => el.classList.remove('active'));
+      document
+        .querySelectorAll('.shift-container')
+        .forEach(el => el.classList.remove('active'));
+      document
+        .querySelector(`.shift-tab.${s}`)
+        .classList.add('active');
+      document.getElementById(`${s}-shift-container`).classList.add('active');
     }
 
-    function setupDragAndDrop() {
-      let draggedItem, draggedShift, draggedIndex;
-      document.querySelectorAll('.task-item').forEach(item=>{
-        item.addEventListener('dragstart',e=>{
-          draggedItem=item;
-          draggedShift=item.dataset.shift;
-          draggedIndex=+item.dataset.index;
+    //─────────────────────────────────────────────────────────────────────────
+    // Drag & drop
+    function bindDrag() {
+      let dItem, dShift, dIndex;
+      document.querySelectorAll('.task-item').forEach(item => {
+        item.addEventListener('dragstart', e => {
+          dItem = item;
+          dShift = item.dataset.shift;
+          dIndex = +item.dataset.index;
           item.classList.add('dragging');
         });
-        item.addEventListener('dragend',()=>{
+        item.addEventListener('dragend', () => {
           item.classList.remove('dragging');
-          saveTasksToFirebase(); // Save after drag
+          saveTasks();
         });
-        item.addEventListener('dragover',e=>e.preventDefault());
-        item.addEventListener('drop',()=>{
-          const ts=item.dataset.shift;
-          const ti=+item.dataset.index;
-          if(draggedItem&&ts===draggedShift){
-            const [m]=tasks[draggedShift].splice(draggedIndex,1);
-            tasks[draggedShift].splice(ti,0,m);
-            renderTasks();
+        item.addEventListener('dragover', e => e.preventDefault());
+        item.addEventListener('drop', () => {
+          const ts = item.dataset.shift;
+          const ti = +item.dataset.index;
+          if (ts === dShift) {
+            const [m] = tasks[ts].splice(dIndex, 1);
+            tasks[ts].splice(ti, 0, m);
+            renderAll();
           }
         });
       });
     }
 
-    function startAlarmChecker(){
-      setInterval(checkAlarms,30000);
+    //─────────────────────────────────────────────────────────────────────────
+    // Alarm checking
+    function startAlarmChecker() {
+      setInterval(checkAlarms, 30000);
       checkAlarms();
     }
-    
-    function checkAlarms(){
-      const now=Date.now(), list=[];
-      ['day','night'].forEach(s=>{
-        tasks[s].forEach(t=>{
-          if(!t.completed){
-            const d=new Date(t.time).getTime()-now;
-            if(d>-60000&&d<300000) list.push({s,t,d});
+    function checkAlarms() {
+      const now = Date.now();
+      const upcoming = [];
+      ['day', 'night'].forEach(s =>
+        tasks[s].forEach(t => {
+          if (!t.completed) {
+            const diff = new Date(t.time).getTime() - now;
+            if (diff > -60000 && diff < 300000) {
+              upcoming.push({ s, t, diff });
+            }
           }
-        });
+        })
+      );
+      upcoming.sort((a, b) => a.diff - b.diff);
+      document
+        .querySelectorAll('.task-item.upcoming')
+        .forEach(el => el.classList.remove('upcoming'));
+      if (upcoming.length) {
+        const { s, t } = upcoming[0];
+        const idx = tasks[s].indexOf(t);
+        const el = document.querySelector(
+          `#${s}-shift-tasks .task-item[data-index="${idx}"]`
+        );
+        if (el) el.classList.add('upcoming');
+        showAlarm(s, t);
+      } else {
+        closeAlarm();
+      }
+    }
+
+    function showAlarm(_s, task) {
+      const box = document.getElementById('alarmNotification');
+      document.getElementById('alarmMessage').textContent = `
+        ${formatDisplay(task.time)} – ${task.text}`;
+      box.style.display = 'block';
+    }
+    function closeAlarm() {
+      document.getElementById('alarmNotification').style.display = 'none';
+    }
+
+    //─────────────────────────────────────────────────────────────────────────
+    // Utility
+    function formatDisplay(dtStr) {
+      const d = new Date(dtStr);
+      return d.toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit'
       });
-      list.sort((a,b)=>a.d-b.d);
-      document.querySelectorAll('.task-item.upcoming').forEach(el=>el.classList.remove('upcoming'));
-      if(list.length){
-        const {s,t}=list[0];
-        const idx=tasks[s].indexOf(t);
-        const el=document.querySelector(`#${s}-shift-tasks .task-item[data-index="${idx}"]`);
-        if(el) el.classList.add('upcoming');
-        showAlarm(s,t);
-      } else closeAlarm();
     }
-    
-    function showAlarm(shift,task){
-      const box=document.getElementById('alarmNotification');
-      document.getElementById('alarmMessage').textContent = 
-        `${formatDisplay(task.time)} – ${task.text}`;
-      box.style.display='block';
+    function formatExcel(dtStr) {
+      const d = new Date(dtStr);
+      return (
+        d.toLocaleDateString() +
+        ' ' +
+        d.toLocaleTimeString([], {
+          hour: '2-digit',
+          minute: '2-digit'
+        })
+      );
     }
-    
-    function closeAlarm(){ 
-      document.getElementById('alarmNotification').style.display='none'; 
-    }
-
-    function formatDisplay(dt){
-      const d=new Date(dt);
-      return d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
-    }
-    
-    function formatExcel(dt){
-      const d=new Date(dt);
-      return `${d.toLocaleDateString()} ${d.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}`;
-    }
-
-    function showToast(msg, type='info'){
-      const wrap=document.getElementById('toastWrap');
-      const el=document.createElement('div');
-      el.className=`toast ${type}`;
-      el.textContent=msg;
+    function showToast(msg, type = 'info') {
+      const wrap = document.getElementById('toastWrap');
+      const el = document.createElement('div');
+      el.className = `toast ${type}`;
+      el.textContent = msg;
       wrap.appendChild(el);
-      setTimeout(()=>el.remove(),3000);
+      setTimeout(() => el.remove(), 3000);
+    }
+    function escapeHtml(str) {
+      const p = document.createElement('p');
+      p.textContent = str;
+      return p.innerHTML;
     }
   </script>
 </body>
