@@ -443,9 +443,6 @@
     .task-item.completed {
       background: rgba(22, 163, 74, 0.1);
     }
-    .task-item.completed .task-text {
-      text-decoration: line-through;
-    }
     .task-item.upcoming {
       border-color: var(--warning);
       background: rgba(249, 115, 22, 0.1);
@@ -1115,18 +1112,19 @@
     }
 
     function anchorDatesToToday() {
-      tasks.day.forEach(t => {
+      const now = new Date();
+      const pad = n => String(n).padStart(2, '0');
+    
+      function setToToday(t) {
+        if (!t.time) return;
         const dt = new Date(t.time);
-        const now = new Date();
         dt.setFullYear(now.getFullYear(), now.getMonth(), now.getDate());
-        t.time = dt.toISOString().slice(0, 16);
-      });
-      tasks.night.forEach(t => {
-        const dt = new Date(t.time);
-        const now = new Date();
-        dt.setFullYear(now.getFullYear(), now.getMonth(), now.getDate());
-        t.time = dt.toISOString().slice(0, 16);
-      });
+        // Keep local datetime-local format without timezone shift
+        t.time = `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}T${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
+      }
+    
+      tasks.day.forEach(setToToday);
+      tasks.night.forEach(setToToday);
       setDefaultInputs();
     }
 
@@ -1248,11 +1246,16 @@
     }
 
     async function deleteTask(s, i) {
-      if (!confirm('Delete this task?')) return;
-      tasks[s].splice(i, 1);
-      renderAll();
-      await saveTasks();
-      showToast('Task deleted', 'info');
+      const task = tasks[s][i];
+      if (task.locked) {
+        showToast('Cannot delete locked task', 'error');
+        return;
+    }
+    if (!confirm('Delete this task?')) return;
+    tasks[s].splice(i, 1);
+    renderAll();
+    await saveTasks();
+    showToast('Task deleted', 'info');
     }
 
     async function sortTasks() {
@@ -1348,28 +1351,34 @@
       a.style.display = 'none';
       showShift(shift);
 
-      html2canvas(
-        document.getElementById('checklist-content'),
-        {
-          scale: window.devicePixelRatio * 2,
-          useCORS: true,
-          backgroundColor: getComputedStyle(
-            document.documentElement
-          )
-            .getPropertyValue('--bg')
-            .trim()
-        }
-      )
+      // Save and override devicePixelRatio
+      const originalDPR = window.devicePixelRatio;
+      Object.defineProperty(window, 'devicePixelRatio', { get: () => 4 });
+
+      const target = document.getElementById('checklist-content');
+      window.scrollTo(0, 0);
+
+      html2canvas(target, {
+        scale: 4,
+        width: target.scrollWidth,
+        height: target.scrollHeight,
+        letterRendering: true,
+        useCORS: true,
+        backgroundColor: getComputedStyle(document.documentElement)
+          .getPropertyValue('--bg')
+          .trim()
+      })
         .then(canvas => {
           const link = document.createElement('a');
-          link.download = `${shift}-shift-${new Date()
-            .toISOString()
-            .slice(0, 10)}.png`;
+          link.download = `${shift}-shift-${new Date().toISOString().slice(0, 10)}.png`;
           link.href = canvas.toDataURL('image/png');
           link.click();
           showToast(`${shift} downloaded`, 'success');
         })
         .finally(() => {
+          // Restore DPR
+          Object.defineProperty(window, 'devicePixelRatio', { get: () => originalDPR });
+
           h.style.display = '';
           a.style.display = '';
           showShift('day');
@@ -1542,7 +1551,7 @@
     // Utility
     function formatDisplay(dtStr) {
       const d = new Date(dtStr);
-      return d.toLocaleTimeString([], {
+      return d.toLocaleString([], {
         hour: '2-digit',
         minute: '2-digit'
       });
