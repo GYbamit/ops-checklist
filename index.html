@@ -731,6 +731,17 @@
       color: #fff;
       border-color: transparent;
     }
+   .task-item, .shift-container, .title-card {
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
+   }
+
+   /* Ensure text remains sharp during scaling */
+   * {
+      image-rendering: -webkit-optimize-contrast;
+      image-rendering: crisp-edges;
+  }
   </style>
 </head>
 <body>
@@ -1349,47 +1360,57 @@
     //─────────────────────────────────────────────────────────────────────────
     // Downloads
     function downloadChecklist(shift) {
-    // Hide all buttons and action elements
-    document.querySelectorAll('button').forEach(btn => btn.style.display = 'none');
-    document.querySelector('.action-bar').style.display = 'none';
-    document.querySelector('.app-header').style.display = 'none';
-    
-    showShift(shift);
+  	  // Hide UI elements for a clean screenshot
+  	  document.querySelectorAll('button').forEach(btn => btn.style.display = 'none');
+ 	    document.querySelector('.action-bar').style.display = 'none';
+  	  document.querySelector('.app-header').style.display = 'none';
+  
+  	  showShift(shift);
 
-    // Save and override devicePixelRatio
-    const originalDPR = window.devicePixelRatio;
-    Object.defineProperty(window, 'devicePixelRatio', { get: () => 4 });
+  	  const target = document.getElementById('checklist-content');
+  	  window.scrollTo(0, 0);
 
-    const target = document.getElementById('checklist-content');
-    window.scrollTo(0, 0);
-
-    html2canvas(target, {
-      scale: 4,
-      width: target.scrollWidth,
-      height: target.scrollHeight,
-      letterRendering: true,
-      useCORS: true,
-      backgroundColor: getComputedStyle(document.documentElement)
-        .getPropertyValue('--bg')
-        .trim()
-    })
-      .then(canvas => {
+  	  // Calculate optimal scale based on device capabilities
+  	  const baseDPI = 96; // Standard screen DPI
+  	  const currentDPI = window.devicePixelRatio * baseDPI;
+  	  const qualityScale = Math.max(2, Math.min(4, currentDPI / baseDPI));
+  
+	    html2canvas(target, {
+    	  scale: qualityScale,
+    		width: target.scrollWidth,
+    		height: target.scrollHeight,
+    		letterRendering: true,
+    		useCORS: true,
+    		backgroundColor: getComputedStyle(document.documentElement)
+      	  .getPropertyValue('--bg')
+      	  .trim(),
+    		logging: false,
+    		onclone: function(clonedDoc) {
+      	  // Ensure all styles are properly applied in the clone
+      	  const clonedContainer = clonedDoc.getElementById('checklist-content');
+      	  clonedContainer.style.width = target.scrollWidth + 'px';
+      	  clonedContainer.style.height = 'auto';
+    	  }
+  	  })
+   	 .then(canvas => {
+        // Further enhance image quality with post-processing
+        context = canvas.getContext('2d');
+        context.imageSmoothingEnabled = true;
+        context.imageSmoothingQuality = 'high';
+      
         const link = document.createElement('a');
         link.download = `${shift}-shift-${new Date().toISOString().slice(0, 10)}.png`;
-        link.href = canvas.toDataURL('image/png');
+        link.href = canvas.toDataURL('image/png', 1.0); // Maximum quality
         link.click();
-        showToast(`${shift} downloaded`, 'success');
+        showToast(`${shift} shift downloaded`, 'success');
       })
-      .finally(() => {
-        // Restore DPR
-        Object.defineProperty(window, 'devicePixelRatio', { get: () => originalDPR });
-
-        // Show all buttons and action elements again
+        .finally(() => {
+        // Restore UI elements
         document.querySelectorAll('button').forEach(btn => btn.style.display = '');
         document.querySelector('.action-bar').style.display = '';
         document.querySelector('.app-header').style.display = '';
         showShift('day');
-      });
+       });
     }
 
     async function exportToExcel() {
