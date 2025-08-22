@@ -1,1613 +1,1138 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="light">
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1"
-  />
-  <title>Operations Center Checklist</title>
-
-  <!-- Firebase SDK -->
-  <script type="module">
-    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
-    import {
-      getDatabase,
-      ref,
-      set,
-      get,
-      onValue,
-      push,
-      remove,
-      update
-    } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
-
-    // TODO: Replace with your Firebase config
-    const firebaseConfig = {
-      apiKey: "AIzaSyC7qDBxgDgLAZAaNDH5X1cCAVmwshQWml4",
-      authDomain: "to-do-list-dfa40.firebaseapp.com",
-      databaseURL:
-        "https://to-do-list-dfa40-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "to-do-list-dfa40",
-      storageBucket: "to-do-list-dfa40.firebasestorage.app",
-      messagingSenderId: "1026658012382",
-      appId: "1:1026658012382:web:30d662f7f63cbed723864f",
-      measurementId: "G-TW5MKN63SV"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const database = getDatabase(app);
-
-    // expose firebase helpers
-    window.firebase = {
-      database,
-      ref,
-      set,
-      get,
-      onValue,
-      push,
-      remove,
-      update
-    };
-  </script>
-
-  <!-- External libraries -->
-  <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
-
-  <!-- Google Font -->
-  <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-    rel="stylesheet"
-  />
-
-  <style>
-    /* ─────────────────────────────────────────────────────────
-       Color variables
-    ───────────────────────────────────────────────────────── */
-    :root {
-      --bg: #f8fafc;
-      --card: #ffffff;
-      --text: #1f2937;
-      --muted: #4b5563;
-      --border: #e5e7eb;
-      --border-strong: #cbd5e1;
-      --shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-
-      --primary: #0288d1;
-      --accent: #26c6da;
-
-      --day-accent: #ffc107;
-      --night-accent: #3f51b5;
-
-      --success: #16a34a;
-      --warning: #f97316;
-      --danger: #dc2626;
-
-      --chip-bg: #f1f5f9;
-      --chip-text: #1f2937;
-
-      --radius: 10px;
-    }
-    [data-theme="dark"] {
-      --bg: #1e293b;
-      --card: #334155;
-      --text: #2277cc;
-      --muted: #9ca3af;
-      --border: #475569;
-      --border-strong: #64748b;
-      --shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
-
-      --chip-bg: #475569;
-      --chip-text: #f1f5f9;
-    }
-
-    /* ─────────────────────────────────────────────────────────
-       Reset & body
-    ───────────────────────────────────────────────────────── */
-    * {
-      box-sizing: border-box;
-    }
-    body {
-      margin: 0;
-      font-family: 'Inter', sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-    }
-
-    /* ─────────────────────────────────────────────────────────
-       Header
-    ───────────────────────────────────────────────────────── */
-    .app-header {
-      position: sticky;
-      top: 0;
-      background: var(--card);
-      border-bottom: 1px solid var(--border);
-      padding: 14px 24px;
-      box-shadow: var(--shadow);
-      z-index: 10;
-    }
-    .header-inner {
-      max-width: 1100px;
-      margin: 0 auto;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .brand {
-      font-weight: 700;
-      font-size: 20px;
-    }
-    .theme-toggle {
-      padding: 6px 12px;
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      background: var(--card);
-      color: var(--text);
-      cursor: pointer;
-      transition: background 0.2s, color 0.2s;
-    }
-    .theme-toggle:hover {
-      background: var(--primary);
-      color: #fff;
-    }
-    .status-indicator {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 13px;
-      color: var(--muted);
-      padding: 4px 8px;
-      border: 1px solid var(--border);
-      border-radius: 999px;
-    }
-    .status-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: #9ca3af;
-    }
-    .status-dot.connected {
-      background: #22c55e;
-    }
-
-    /* ─────────────────────────────────────────────────────────
-       Toast notifications
-    ───────────────────────────────────────────────────────── */
-    .toast-wrap {
-      position: fixed;
-      top: 16px;
-      right: 16px;
-      display: grid;
-      gap: 10px;
-      z-index: 30;
-    }
-    .toast {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 10px 14px;
-      background: var(--card);
-      border: 1px solid var(--border);
-      box-shadow: var(--shadow);
-      border-left-width: 4px;
-      animation: slideIn 0.2s ease forwards;
-      min-width: 240px;
-      border-radius: 8px;
-    }
-    .toast.success {
-      border-left-color: var(--success);
-    }
-    .toast.info {
-      border-left-color: var(--primary);
-    }
-    .toast.error {
-      border-left-color: var(--danger);
-    }
-    @keyframes slideIn {
-      from {
-        opacity: 0;
-        transform: translateY(-8px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    /* ─────────────────────────────────────────────────────────
-       Alarm notification
-    ───────────────────────────────────────────────────────── */
-    .alarm-notification {
-      position: fixed;
-      bottom: 24px;
-      right: 24px;
-      background: var(--danger);
-      color: #fff;
-      padding: 14px 16px;
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      display: none;
-      animation: pulse 2s infinite;
-    }
-    @keyframes pulse {
-      0%,
-      100% {
-        transform: scale(1);
-      }
-      50% {
-        transform: scale(1.05);
-      }
-    }
-    .alarm-notification button {
-      margin-top: 8px;
-      background: #fff;
-      color: var(--danger);
-      border: none;
-      padding: 6px 10px;
-      border-radius: 999px;
-      cursor: pointer;
-      font-weight: 600;
-    }
-
-    /* ─────────────────────────────────────────────────────────
-       Page wrapper & title card
-    ───────────────────────────────────────────────────────── */
-    .page {
-      max-width: 1100px;
-      margin: 32px auto 120px;
-      padding: 0 16px;
-    }
-    .title-card {
-      background: var(--card);
-      background-image: linear-gradient(
-        135deg,
-        var(--card) 0%,
-        rgba(38, 198, 218, 0.04) 100%
-      );
-      border: 2px solid var(--border-strong);
-      border-left: 6px solid var(--accent);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      padding: 24px;
-      text-align: center;
-      margin-bottom: 24px;
-    }
-    .report-title {
-      font-size: 24px;
-      font-weight: 700;
-    }
-    .report-date {
-      font-size: 14px;
-      color: var(--muted);
-    }
-
-    /* ─────────────────────────────────────────────────────────
-       Shift tabs
-    ───────────────────────────────────────────────────────── */
-    .shift-tabs {
-      display: flex;
-      justify-content: center;
-      gap: 12px;
-      margin-top: 20px;
-    }
-    .shift-tab {
-      position: relative;
-      padding: 10px 20px;
-      border: 1px solid var(--border);
-      border-bottom: none;
-      border-radius: var(--radius) var(--radius) 0 0;
-      background: var(--card);
-      color: var(--muted);
-      font-weight: 600;
-      cursor: pointer;
-      transition: background 0.2s, color 0.2s;
-    }
-    .shift-tab.day::before,
-    .shift-tab.night::before {
-      content: "";
-      position: absolute;
-      top: 10px;
-      left: 8px;
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-    }
-    .shift-tab.day::before {
-      background: var(--day-accent);
-    }
-    .shift-tab.night::before {
-      background: var(--night-accent);
-    }
-    .shift-tab:hover {
-      background: rgba(38, 198, 218, 0.1);
-      color: var(--text);
-    }
-    .shift-tab.active {
-      background: var(--card);
-      color: var(--text);
-      border-color: var(--border);
-      border-bottom: 1px solid var(--card);
-    }
-
-    /* ─────────────────────────────────────────────────────────
-       Shift container
-    ───────────────────────────────────────────────────────── */
-    .shift-container {
-      display: none;
-      background: var(--card);
-      background-image: linear-gradient(
-        135deg,
-        var(--card) 0%,
-        rgba(38, 198, 218, 0.04) 100%
-      );
-      border: 2px solid var(--border-strong);
-      border-radius: 0 var(--radius) var(--radius) var(--radius);
-      padding: 24px;
-      box-shadow: var(--shadow);
-      animation: slideDown 0.25s ease both;
-    }
-    .shift-container.active {
-      display: block;
-    }
-    .shift-container.day-shift {
-      border-top: 6px solid var(--day-accent);
-    }
-    .shift-container.night-shift {
-      border-top: 6px solid var(--night-accent);
-    }
-    @keyframes slideDown {
-      from {
-        opacity: 0;
-        transform: translateY(-10px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    .shift-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-    }
-    .shift-header h2 {
-      font-size: 20px;
-      font-weight: 700;
-      margin: 0;
-    }
-
-    .progress {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .progress-bar {
-      position: relative;
-      width: 240px;
-      height: 8px;
-      background: rgba(107, 114, 128, 0.2);
-      border-radius: 999px;
-      overflow: hidden;
-    }
-    .progress-fill {
-      position: absolute;
-      inset: 0;
-      width: 0%;
-      background: var(--accent);
-      border-radius: 999px;
-      transition: width 0.8s ease-out;
-    }
-    .progress-label {
-      width: 32px;
-      text-align: right;
-      font-size: 12px;
-      color: var(--muted);
-    }
-
-    /* ─────────────────────────────────────────────────────────
-       Task list
-    ───────────────────────────────────────────────────────── */
-    .task-list {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-      display: grid;
-      gap: 12px;
-    }
-
-    .task-item {
-      display: grid;
-      grid-template-columns: 120px 1fr 140px 100px auto;
-      align-items: center;
-      gap: 12px;
-      padding: 14px;
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      background: #f9fafb;
-      cursor: grab;
-      animation: fadeIn 0.3s ease both;
-      transition: background 0.2s, box-shadow 0.2s, opacity 0.2s;
-    }
-    .task-item:hover {
-      background: rgba(255, 193, 7, 0.1);
-      box-shadow: var(--shadow);
-    }
-    .task-item.night-hover:hover {
-      background: rgba(63, 81, 181, 0.1);
-    }
-    .task-item.completed {
-      background: rgba(22, 163, 74, 0.1);
-    }
-    .task-item.upcoming {
-      border-color: var(--warning);
-      background: rgba(249, 115, 22, 0.1);
-    }
-    .task-item.locked {
-      cursor: not-allowed;
-      opacity: 0.9;
-    }
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
-        transform: translateY(-6px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    /* Dim day tasks */
-    #day-shift-container .task-item {
-      background: #eff4f8;
-      box-shadow: none;
-    }
-    #day-shift-container .task-item:hover {
-      background: rgba(255, 193, 7, 0.06);
-      box-shadow: var(--shadow);
-    }
-
-    .task-time,
-    .task-assignee {
-      font-size: 14px;
-      font-weight: 500;
-      background: var(--chip-bg);
-      color: var(--chip-text);
-      border: 1px solid var(--border);
-      padding: 6px 10px;
-      border-radius: 999px;
-      text-align: center;
-      white-space: nowrap;
-    }
-    .task-text {
-      font-size: 14px;
-      color: var(--text);
-      word-break: break-word;
-    }
-
-    .task-status {
-      font-size: 12px;
-      font-weight: 700;
-      padding: 4px 10px;
-      border-radius: 999px;
-      border: 1px solid var(--border);
-      text-align: center;
-    }
-    .task-status.completed {
-      background: rgba(22, 163, 74, 0.12);
-      color: var(--success);
-    }
-    .task-status.pending {
-      background: rgba(249, 115, 22, 0.12);
-      color: var(--warning);
-    }
-
-    .task-actions {
-      display: inline-flex;
-      gap: 6px;
-    }
-    .btn-icon {
-      width: 32px;
-      height: 32px;
-      display: inline-grid;
-      place-items: center;
-      border: 1px solid var(--border);
-      background: var(--card);
-      border-radius: 8px;
-      cursor: pointer;
-      transition: background 0.2s, box-shadow 0.2s, color 0.2s;
-    }
-    .btn-icon:hover {
-      background: var(--accent);
-      color: #fff;
-      box-shadow: var(--shadow);
-    }
-    .btn-complete {
-      color: var(--success);
-    }
-    .btn-edit {
-      color: var(--warning);
-    }
-    .btn-delete {
-      color: var(--danger);
-    }
-    .btn-lock {
-      color: #0ea5e9;
-    }
-
-    /* ─────────────────────────────────────────────────────────
-       Add-task form
-    ───────────────────────────────────────────────────────── */
-    .add-task-form {
-      margin-top: 24px;
-      display: grid;
-      grid-template-columns: 200px 1fr 200px auto;
-      gap: 12px;
-      padding: 16px;
-      border: 2px dashed var(--border-strong);
-      border-radius: var(--radius);
-      background: rgba(38, 198, 218, 0.05);
-    }
-    .add-task-form input,
-    .add-task-form select {
-      padding: 10px 12px;
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      background: var(--card);
-      color: var(--text);
-    }
-    .add-btn {
-      background: var(--primary);
-      color: #fff;
-      border: none;
-      padding: 10px 14px;
-      border-radius: var(--radius);
-      cursor: pointer;
-      font-weight: 600;
-      transition: background 0.2s;
-    }
-    .add-btn:hover {
-      background: var(--accent);
-    }
-    .error-message {
-      grid-column: 1 / -1;
-      color: var(--danger);
-      font-size: 12px;
-      display: none;
-    }
-    .error-border {
-      border-color: var(--danger) !important;
-    }
-
-    /* ─────────────────────────────────────────────────────────
-       Remarks
-    ───────────────────────────────────────────────────────── */
-    .remarks-section {
-      margin-top: 24px;
-      padding: 16px;
-      border: 2px solid var(--border-strong);
-      border-left: 6px solid var(--accent);
-      background: rgba(38, 198, 218, 0.05);
-      border-radius: var(--radius);
-    }
-    .remarks-section textarea {
-      width: 100%;
-      min-height: 100px;
-      padding: 12px;
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      background: var(--card);
-      color: var(--text);
-      resize: vertical;
-    }
-
-    /* ─────────────────────────────────────────────────────────
-       Action bar
-    ───────────────────────────────────────────────────────── */
-    .action-bar {
-      position: fixed;
-      bottom: 16px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: var(--card);
-      border: 2px solid var(--border-strong);
-      border-radius: 999px;
-      box-shadow: var(--shadow);
-      padding: 8px;
-      display: flex;
-      gap: 12px;
-      z-index: 20;
-    }
-    .action-bar .btn {
-      padding: 10px 16px;
-      border: 1px solid var(--border);
-      background: var(--card);
-      color: var(--text);
-      border-radius: 999px;
-      cursor: pointer;
-      font-weight: 600;
-      transition: background 0.2s, color 0.2s;
-    }
-    .action-bar .btn:hover {
-      background: var(--accent);
-      color: #fff;
-    }
-    .btn.save {
-      background: var(--accent);
-      color: #fff;
-      border-color: transparent;
-    }
-    .btn.clear {
-      color: var(--danger);
-    }
-    .btn.excel {
-      background: var(--success);
-      color: #fff;
-      border-color: transparent;
-    }
-
-    /* ─────────────────────────────────────────────────────────
-       Modal
-    ───────────────────────────────────────────────────────── */
-    .modal {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.4);
-      backdrop-filter: blur(4px);
-      padding: 20px;
-      z-index: 40;
-    }
-    .modal-content {
-      max-width: 500px;
-      margin: 8vh auto;
-      background: var(--card);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-      overflow: hidden;
-      border: 2px solid var(--border-strong);
-    }
-    .modal-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 16px;
-      border-bottom: 1px solid var(--border);
-    }
-    .modal-title {
-      font-weight: 700;
-    }
-    .close-btn {
-      font-size: 20px;
-      cursor: pointer;
-      color: var(--muted);
-    }
-    .modal-body {
-      padding: 16px;
-      display: grid;
-      gap: 12px;
-    }
-    .form-group label {
-      display: block;
-      font-weight: 600;
-      margin-bottom: 6px;
-    }
-    .form-group input,
-    .form-group select {
-      width: 100%;
-      padding: 10px 12px;
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      background: var(--card);
-      color: var(--text);
-    }
-    .modal-footer {
-      display: flex;
-      justify-content: flex-end;
-      gap: 8px;
-      padding: 14px 18px;
-      border-top: 1px solid var(--border);
-    }
-    .modal-btn {
-      padding: 8px 16px;
-      border: 1px solid var(--border);
-      background: var(--card);
-      cursor: pointer;
-      border-radius: var(--radius);
-      font-weight: 600;
-      transition: background 0.2s, color 0.2s;
-    }
-    .modal-btn:hover {
-      background: var(--accent);
-      color: #fff;
-    }
-    .modal-btn-primary {
-      background: var(--accent);
-      color: #fff;
-      border-color: transparent;
-    }
-   .task-item, .shift-container, .title-card {
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-      text-rendering: optimizeLegibility;
-   }
-
-   /* Ensure text remains sharp during scaling */
-   * {
-      image-rendering: -webkit-optimize-contrast;
-      image-rendering: crisp-edges;
-  }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Operations Center Handover Report</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        :root {
+            --primary: #2c3e50;
+            --secondary: #34495e;
+            --accent: #3498db;
+            --light: #ecf0f1;
+            --dark: #2c3e50;
+            --success: #2ecc71;
+            --warning: #f39c12;
+            --danger: #e74c3c;
+            --info: #3498db;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 5px 25px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .header-info {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        h1 {
+            font-size: 28px;
+            font-weight: 600;
+        }
+        
+        .date-time {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+        
+        .shift-toggle {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .shift-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .shift-btn.active {
+            background: var(--warning);
+            color: white;
+        }
+        
+        .shift-btn:not(.active) {
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+        }
+        
+        .alert-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+            width: 100%;
+        }
+        
+        .alert-box {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 15px;
+        }
+        
+        .alert-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .alert-title {
+            font-size: 16px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .alert-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .add-alert-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            width: 28px;
+            height: 28px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .clear-alert-btn {
+            background: rgba(231, 76, 60, 0.7);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 0 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 13px;
+        }
+        
+        .alert-items {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .alert-item {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 6px;
+            padding: 12px;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        
+        .alert-bullet {
+            color: #ff9f43;
+            font-size: 18px;
+            margin-top: 2px;
+            flex-shrink: 0;
+        }
+        
+        .alert-content {
+            flex: 1;
+            font-size: 14px;
+            line-height: 1.4;
+            white-space: pre-line;
+        }
+        
+        .alert-item-actions {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .edit-alert-btn, .delete-alert-btn {
+            color: white;
+            border: none;
+            border-radius: 4px;
+            width: 25px;
+            height: 25px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .edit-alert-btn {
+            background: rgba(52, 152, 219, 0.7);
+        }
+        
+        .delete-alert-btn {
+            background: rgba(231, 76, 60, 0.7);
+        }
+        
+        main {
+            padding: 25px;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+            border-left: 4px solid var(--accent);
+        }
+        
+        .section-header {
+            background: #f8f9fa;
+            padding: 18px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #eaecef;
+        }
+        
+        .section-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .section-icon {
+            color: var(--accent);
+        }
+        
+        .section-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .add-btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 15px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+        }
+        
+        .clear-btn {
+            background: var(--danger);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 15px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+        }
+        
+        .section-content {
+            padding: 25px;
+        }
+        
+        .entry-list {
+            list-style-type: none;
+        }
+        
+        .entry-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            padding: 12px 0;
+            border-bottom: 1px solid #f1f1f1;
+        }
+        
+        .entry-item:last-child {
+            border-bottom: none;
+        }
+        
+        .bullet {
+            color: var(--accent);
+            font-size: 18px;
+            margin-top: 2px;
+            flex-shrink: 0;
+        }
+        
+        .entry-content {
+            flex: 1;
+            padding-right: 30px;
+            font-size: 14px;
+            line-height: 1.4;
+            white-space: pre-line;
+        }
+        
+        .entry-actions {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .edit-btn, .delete-btn {
+            color: white;
+            border: none;
+            border-radius: 4px;
+            width: 28px;
+            height: 28px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .edit-btn {
+            background: var(--info);
+        }
+        
+        .delete-btn {
+            background: var(--danger);
+        }
+        
+        .entry-input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            margin-bottom: 15px;
+            font-size: 14px;
+            line-height: 1.4;
+            resize: vertical;
+            min-height: 100px;
+            font-family: inherit;
+        }
+        
+        .input-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        
+        .save-btn {
+            background: var(--success);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .cancel-btn {
+            background: #95a5a6;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .actions {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            padding: 25px;
+            background: #f8f9fa;
+            border-top: 1px solid #eaecef;
+        }
+        
+        .action-btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s;
+            font-size: 16px;
+        }
+        
+        .save-report {
+            background: var(--success);
+            color: white;
+        }
+        
+        .take-screenshot {
+            background: var(--info);
+            color: white;
+        }
+        
+        .action-btn:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #7f8c8d;
+            font-size: 14px;
+            background: #f8f9fa;
+            border-top: 1px solid #eaecef;
+        }
+        
+        /* CSS for screenshot mode */
+        .screenshot-mode .shift-btn,
+        .screenshot-mode .alert-actions,
+        .screenshot-mode .section-actions,
+        .screenshot-mode .entry-actions,
+        .screenshot-mode .alert-item-actions,
+        .screenshot-mode .actions,
+        .screenshot-mode footer,
+        .screenshot-mode .input-actions,
+        .screenshot-mode .entry-input,
+        .screenshot-mode .alert-input {
+            display: none !important;
+        }
+        
+        .screenshot-mode .shift-toggle {
+            display: flex;
+        }
+        
+        .screenshot-mode .shift-btn {
+            background: transparent !important;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            pointer-events: none;
+            cursor: default;
+        }
+        
+        .screenshot-mode .alert-item,
+        .screenshot-mode .entry-item {
+            padding: 8px 0;
+        }
+        
+        @media (max-width: 900px) {
+            .alert-section {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 20px;
+            }
+            
+            .shift-toggle {
+                align-self: stretch;
+                justify-content: space-between;
+            }
+            
+            .shift-btn {
+                flex: 1;
+                justify-content: center;
+            }
+            
+            .section-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+            
+            .section-actions {
+                align-self: stretch;
+                justify-content: space-between;
+            }
+        }
+    </style>
 </head>
 <body>
-  <!-- Header bar -->
-  <header class="app-header">
-    <div class="header-inner">
-      <div class="brand">Operations Center</div>
-      <div style="display: flex; gap: 12px; align-items: center;">
-        <div class="status-indicator">
-          <span id="connectionStatus" class="status-dot"></span>
-          <span id="connectionText">Connecting...</span>
-        </div>
-        <button id="themeToggle" class="theme-toggle">Toggle Theme</button>
-      </div>
-    </div>
-  </header>
-
-  <!-- Toast container -->
-  <div id="toastWrap" class="toast-wrap"></div>
-
-  <!-- Alarm pop-up -->
-  <div id="alarmNotification" class="alarm-notification">
-    <div><strong>Upcoming Task</strong></div>
-    <div id="alarmMessage" style="margin-top:8px;"></div>
-    <button onclick="closeAlarm()">Dismiss</button>
-  </div>
-
-  <main class="page">
-    <div id="checklist-content">
-      <div class="title-card">
-        <div class="report-title">Operations Center Checklist</div>
-        <div class="report-date">Stay focused. Stay efficient.</div>
-        <div class="shift-tabs">
-          <div class="shift-tab day active" onclick="showShift('day')">
-            Day Shift
-          </div>
-          <div class="shift-tab night" onclick="showShift('night')">
-            Night Shift
-          </div>
-        </div>
-      </div>
-
-      <!-- Day Shift Section -->
-      <div
-        id="day-shift-container"
-        class="shift-container day-shift active"
-      >
-        <div class="shift-header">
-          <h2>Day Shift</h2>
-          <div class="progress">
-            <span id="day-progress-label" class="progress-label">0%</span>
-            <div class="progress-bar">
-              <div id="day-progress" class="progress-fill"></div>
+    <div class="container">
+        <header>
+            <div class="header-info">
+                <h1>Operations Center Handover Report</h1>
+                <div id="current-date" class="date-time">Loading date...</div>
             </div>
-          </div>
-        </div>
-        <ul id="day-shift-tasks" class="task-list"></ul>
-
-        <div class="add-task-form">
-          <input type="datetime-local" id="day-shift-new-time" required />
-          <input
-            type="text"
-            id="day-shift-new-task"
-            placeholder="Task description"
-            required
-          />
-          <select id="day-shift-new-assignee" class="assignee-select" required>
-            <option value="">Select Assignee</option>
-          </select>
-          <button class="add-btn" onclick="addTask('day')">Add Task</button>
-          <div id="day-shift-assignee-error" class="error-message">
-            Please select an assignee
-          </div>
-        </div>
-
-        <div class="remarks-section">
-          <textarea
-            id="day-shift-remarks"
-            placeholder="Enter remarks..."
-            onblur="saveRemarks('day')"
-          ></textarea>
-        </div>
-      </div>
-
-      <!-- Night Shift Section -->
-      <div id="night-shift-container" class="shift-container night-shift">
-        <div class="shift-header">
-          <h2>Night Shift</h2>
-          <div class="progress">
-            <span id="night-progress-label" class="progress-label">0%</span>
-            <div class="progress-bar">
-              <div id="night-progress" class="progress-fill"></div>
+            
+            <div class="shift-toggle">
+                <button id="day-shift" class="shift-btn active">
+                    <i class="fas fa-sun"></i> Day Shift
+                </button>
+                <button id="night-shift" class="shift-btn">
+                    <i class="fas fa-moon"></i> Night Shift
+                </button>
             </div>
-          </div>
+            
+            <div class="alert-section">
+                <div class="alert-box">
+                    <div class="alert-header">
+                        <div class="alert-title">
+                            <i class="fas fa-exclamation-circle"></i>
+                            <span>Ongoing Incidents</span>
+                        </div>
+                        <div class="alert-actions">
+                            <button class="clear-alert-btn" data-type="incident">
+                                <i class="fas fa-trash"></i> Clear All
+                            </button>
+                            <button class="add-alert-btn" data-type="incident">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="incident-items" class="alert-items">
+                        <!-- Incident items will be added here -->
+                    </div>
+                </div>
+                
+                <div class="alert-box">
+                    <div class="alert-header">
+                        <div class="alert-title">
+                            <i class="fas fa-tools"></i>
+                            <span>Upcoming Maintenance</span>
+                        </div>
+                        <div class="alert-actions">
+                            <button class="clear-alert-btn" data-type="maintenance">
+                                <i class="fas fa-trash"></i> Clear All
+                            </button>
+                            <button class="add-alert-btn" data-type="maintenance">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="maintenance-items" class="alert-items">
+                        <!-- Maintenance items will be added here -->
+                    </div>
+                </div>
+            </div>
+        </header>
+        
+        <main>
+            <div class="section">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <i class="fas fa-info-circle section-icon"></i>
+                        General Information
+                    </h2>
+                    <div class="section-actions">
+                        <button class="clear-btn" data-section="general">
+                            <i class="fas fa-trash"></i> Clear All
+                        </button>
+                        <button class="add-btn" data-section="general">
+                            <i class="fas fa-plus"></i> Add Entry
+                        </button>
+                    </div>
+                </div>
+                <div id="general-entries" class="section-content">
+                    <ul class="entry-list">
+                        <!-- Entries will be added here -->
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <i class="fas fa-bell section-icon"></i>
+                        Reminders
+                    </h2>
+                    <div class="section-actions">
+                        <button class="clear-btn" data-section="reminders">
+                            <i class="fas fa-trash"></i> Clear All
+                        </button>
+                        <button class="add-btn" data-section="reminders">
+                            <i class="fas fa-plus"></i> Add Entry
+                        </button>
+                    </div>
+                </div>
+                <div id="reminders-entries" class="section-content">
+                    <ul class="entry-list">
+                        <!-- Entries will be added here -->
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="section">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        <i class="fas fa-phone-alt section-icon"></i>
+                        On-Call Updates
+                    </h2>
+                    <div class="section-actions">
+                        <button class="clear-btn" data-section="oncall">
+                            <i class="fas fa-trash"></i> Clear All
+                        </button>
+                        <button class="add-btn" data-section="oncall">
+                            <i class="fas fa-plus"></i> Add Entry
+                        </button>
+                    </div>
+                </div>
+                <div id="oncall-entries" class="section-content">
+                    <ul class="entry-list">
+                        <!-- Entries will be added here -->
+                    </ul>
+                </div>
+            </div>
+        </main>
+        
+        <div class="actions">
+            <button class="action-btn save-report">
+                <i class="fas fa-save"></i> Save Report
+            </button>
+            <button class="action-btn take-screenshot">
+                <i class="fas fa-camera"></i> Capture Report
+            </button>
         </div>
-        <ul id="night-shift-tasks" class="task-list"></ul>
-
-        <div class="add-task-form">
-          <input type="datetime-local" id="night-shift-new-time" required />
-          <input
-            type="text"
-            id="night-shift-new-task"
-            placeholder="Task description"
-            required
-          />
-          <select
-            id="night-shift-new-assignee"
-            class="assignee-select"
-            required
-          >
-            <option value="">Select Assignee</option>
-          </select>
-          <button class="add-btn" onclick="addTask('night')">
-            Add Task
-          </button>
-          <div id="night-shift-assignee-error" class="error-message">
-            Please select an assignee
-          </div>
-        </div>
-
-        <div class="remarks-section">
-          <textarea
-            id="night-shift-remarks"
-            placeholder="Enter remarks..."
-            onblur="saveRemarks('night')"
-          ></textarea>
-        </div>
-      </div>
+        
+        <footer>
+            <p>Not finish yet</p>
+        </footer>
     </div>
-  </main>
 
-  <!-- Action bar -->
-  <div class="action-bar">
-    <button class="btn" onclick="syncNow()">Sync Now</button>
-    <button class="btn sort" onclick="sortTasks()">Sort by Time</button>
-    <button class="btn clear" onclick="clearAllTasks()">Clear All Tasks</button>
-    <button class="btn" onclick="downloadChecklist('day')">
-      Download Day Shift
-    </button>
-    <button class="btn" onclick="downloadChecklist('night')">
-      Download Night Shift
-    </button>
-    <button class="btn excel" onclick="exportToExcel()">Export to Excel</button>
-  </div>
+    <!-- Firebase App (core Firebase SDK) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <!-- Firebase Database -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <!-- html2canvas for screenshot functionality -->
+    <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 
-  <!-- Edit modal -->
-  <div id="editTaskModal" class="modal" role="dialog" aria-modal="true">
-    <div class="modal-content">
-      <div class="modal-header">
-        <span class="modal-title">Edit Task</span>
-        <span class="close-btn" onclick="closeEditModal()">&times;</span>
-      </div>
-      <div class="modal-body">
-        <div class="form-group">
-          <label for="edit-task-time">Time</label>
-          <input type="datetime-local" id="edit-task-time" required />
-        </div>
-        <div class="form-group">
-          <label for="edit-task-text">Task Description</label>
-          <input type="text" id="edit-task-text" required />
-        </div>
-        <div class="form-group">
-          <label for="edit-task-assignee">Assignee</label>
-          <select id="edit-task-assignee" required>
-            <option value="">Select Assignee</option>
-          </select>
-          <div id="edit-task-assignee-error" class="error-message">
-            Please select an assignee
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="modal-btn" id="cancel-edit-btn">Cancel</button>
-        <button class="modal-btn modal-btn-primary" id="save-edit-btn">
-          Save Changes
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    // Task storage
-    let tasks = { day: [], night: [] };
-    let remarks = { day: '', night: '' };
-    let isConnected = false;
-    let currentEditShift = '', currentEditIndex = -1;
-    let tasksRef, remarksRef;
-
-    // Randomized assignees
-    const assignees = [
-      'Geron',
-      'John Mick',
-      'Nelson',
-      'Jeremiah',
-      'Anna',
-      'Judy',
-      'Joyce',
-      'Ceriaco',
-      'Jonnie',
-      'Danica',
-      'Jake',
-      'Joseph',
-      'Team A',
-      'Team B',
-      'Team C',
-      'Team D'
-    ].sort(() => Math.random() - 0.5);
-
-    const dayTasksEl = document.getElementById('day-shift-tasks');
-    const nightTasksEl = document.getElementById('night-shift-tasks');
-    const modal = document.getElementById('editTaskModal');
-
-    window.onload = async () => {
-      initTheme();
-      populateAssignees();
-      initDateTimeInputs();
-      await initFirebase();
-      bindEditModal();
-      startAlarmChecker();
-    };
-
-    //─────────────────────────────────────────────────────────────────────────
-    // Firebase init and listeners
-    async function initFirebase() {
-      try {
-        const { database, ref, onValue } = window.firebase;
-        tasksRef = ref(database, 'shiftTasks');
-        remarksRef = ref(database, 'shiftRemarks');
-
-        // connection status
-        const connectedRef = ref(database, '.info/connected');
-        onValue(connectedRef, snap => {
-          isConnected = snap.val() === true;
-          updateConnectionStatus();
-        });
-
-        // tasks updates
-        onValue(tasksRef, snap => {
-          const data = snap.val() || {};
-          tasks.day = (data.day || []).map(_backfill);
-          tasks.night = (data.night || []).map(_backfill);
-          anchorDatesToToday();
-          renderAll();
-        });
-
-        // remarks updates
-        onValue(remarksRef, snap => {
-          const data = snap.val() || {};
-          remarks.day = data.day || '';
-          remarks.night = data.night || '';
-          document.getElementById('day-shift-remarks').value = remarks.day;
-          document.getElementById('night-shift-remarks').value =
-            remarks.night;
-        });
-
-        showToast('Connected to Firebase', 'success');
-      } catch (e) {
-        console.error(e);
-        showToast(
-          'Firebase failed; using localStorage fallback.',
-          'error'
-        );
-        loadLocal();
-      }
-    }
-
-    function _backfill(t) {
-      return {
-        ...t,
-        completed: !!t.completed,
-        locked: !!t.locked
-      };
-    }
-
-    function updateConnectionStatus() {
-      const dot = document.getElementById('connectionStatus');
-      const txt = document.getElementById('connectionText');
-      if (isConnected) {
-        dot.classList.add('connected');
-        txt.textContent = 'Connected';
-      } else {
-        dot.classList.remove('connected');
-        txt.textContent = 'Offline';
-      }
-    }
-
-    async function saveTasks() {
-      if (!isConnected) {
-        localStorage.setItem('shiftTasks', JSON.stringify(tasks));
-        showToast('Saved locally', 'info');
-        return;
-      }
-      try {
-        await window.firebase.set(tasksRef, tasks);
-        showToast('Synced tasks', 'success');
-      } catch (e) {
-        console.error(e);
-        localStorage.setItem('shiftTasks', JSON.stringify(tasks));
-        showToast('Sync failed → saved locally', 'error');
-      }
-    }
-
-    async function saveRemarks(shift) {
-      remarks[shift] = document.getElementById(
-        `${shift}-shift-remarks`
-      ).value;
-      if (!isConnected) {
-        localStorage.setItem('shiftRemarks', JSON.stringify(remarks));
-        return;
-      }
-      try {
-        await window.firebase.set(remarksRef, remarks);
-      } catch {
-        localStorage.setItem('shiftRemarks', JSON.stringify(remarks));
-      }
-    }
-
-    function loadLocal() {
-      const t = localStorage.getItem('shiftTasks');
-      if (t) tasks = JSON.parse(t);
-      const r = localStorage.getItem('shiftRemarks');
-      if (r) {
-        remarks = JSON.parse(r);
-        document.getElementById('day-shift-remarks').value =
-          remarks.day;
-        document.getElementById('night-shift-remarks').value =
-          remarks.night;
-      }
-      tasks.day = tasks.day.map(_backfill);
-      tasks.night = tasks.night.map(_backfill);
-      anchorDatesToToday();
-      renderAll();
-    }
-
-    function syncNow() {
-      if (!isConnected) return showToast('No internet', 'error');
-      saveTasks().then(() => showToast('Synced', 'success'));
-    }
-
-    //─────────────────────────────────────────────────────────────────────────
-    // Theme toggle
-    function initTheme() {
-      const btn = document.getElementById('themeToggle');
-      const root = document.documentElement;
-      const saved = localStorage.getItem('theme') || 'light';
-      root.setAttribute('data-theme', saved);
-      btn.onclick = () => {
-        const next = root.getAttribute('data-theme') === 'light'
-          ? 'dark'
-          : 'light';
-        root.setAttribute('data-theme', next);
-        localStorage.setItem('theme', next);
-      };
-    }
-
-    //─────────────────────────────────────────────────────────────────────────
-    // Populate assignee selects
-    function populateAssignees() {
-      document.querySelectorAll(
-        '.assignee-select, #edit-task-assignee'
-      ).forEach(sel => {
-        while (sel.options.length > 1) sel.remove(1);
-        assignees.forEach(name => {
-          const o = document.createElement('option');
-          o.value = name;
-          o.textContent = name;
-          sel.appendChild(o);
-        });
-      });
-    }
-
-    //─────────────────────────────────────────────────────────────────────────
-    // Date anchoring helpers
-    function toLocalInput(dt = new Date()) {
-      dt.setSeconds(0, 0);
-      const pad = n => String(n).padStart(2, '0');
-      const y = dt.getFullYear();
-      const m = pad(dt.getMonth() + 1);
-      const d = pad(dt.getDate());
-      const hh = pad(dt.getHours());
-      const mm = pad(dt.getMinutes());
-      return `${y}-${m}-${d}T${hh}:${mm}`;
-    }
-
-    function anchorDatesToToday() {
-      const now = new Date();
-      const pad = n => String(n).padStart(2, '0');
-    
-      function setToToday(t) {
-        if (!t.time) return;
-        const dt = new Date(t.time);
-        dt.setFullYear(now.getFullYear(), now.getMonth(), now.getDate());
-        // Keep local datetime-local format without timezone shift
-        t.time = `${dt.getFullYear()}-${pad(dt.getMonth() + 1)}-${pad(dt.getDate())}T${pad(dt.getHours())}:${pad(dt.getMinutes())}`;
-      }
-    
-      tasks.day.forEach(setToToday);
-      tasks.night.forEach(setToToday);
-      setDefaultInputs();
-    }
-
-    function setDefaultInputs() {
-      document.getElementById('day-shift-new-time').value = toLocalInput();
-      document.getElementById('night-shift-new-time').value = toLocalInput();
-    }
-
-    function initDateTimeInputs() {
-      setDefaultInputs();
-    }
-
-    //─────────────────────────────────────────────────────────────────────────
-    // Rendering
-    function renderAll() {
-      renderShift('day');
-      renderShift('night');
-      bindDrag();
-    }
-
-    function renderShift(shift) {
-      const list = shift === 'day' ? dayTasksEl : nightTasksEl;
-      list.innerHTML = '';
-      tasks[shift].forEach((t, i) => {
-        const li = document.createElement('li');
-        li.className = `task-item${t.completed ? ' completed' : ''}${
-          t.locked ? ' locked' : ''
-        }`;
-        li.draggable = !t.locked;
-        li.dataset.shift = shift;
-        li.dataset.index = i;
-
-        const status = t.completed ? 'Completed' : 'Pending';
-        const cls = t.completed ? 'completed' : 'pending';
-        const lockIcon = t.locked ? '🔒' : '🔓';
-        const lockTitle = t.locked ? 'Unlock' : 'Lock';
-
-        li.innerHTML = `
-          <span class="task-time">${formatDisplay(t.time)}</span>
-          <span class="task-text">${escapeHtml(t.text)}</span>
-          <span class="task-assignee">${escapeHtml(t.assignee)}</span>
-          <span class="task-status ${cls}">${status}</span>
-          <div class="task-actions">
-            <button class="btn-icon btn-lock" title="${lockTitle}" onclick="toggleLock('${shift}', ${i})">${lockIcon}</button>
-            <button class="btn-icon btn-complete" title="Toggle Complete" onclick="toggleComplete('${shift}', ${i})">✓</button>
-            <button class="btn-icon btn-edit" title="Edit Task" onclick="openEditModal('${shift}', ${i})">✎</button>
-            <button class="btn-icon btn-delete" title="Delete Task" onclick="deleteTask('${shift}', ${i})">✕</button>
-          </div>`;
-        list.appendChild(li);
-      });
-      updateProgress(shift);
-    }
-
-    function updateProgress(shift) {
-      const done = tasks[shift].filter(t => t.completed).length;
-      const pct = tasks[shift].length
-        ? Math.round((done / tasks[shift].length) * 100)
-        : 0;
-      document.getElementById(`${shift}-progress`).style.width = pct + '%';
-      document.getElementById(
-        `${shift}-progress-label`
-      ).textContent = pct + '%';
-    }
-
-    //─────────────────────────────────────────────────────────────────────────
-    // Task actions
-    async function addTask(shift) {
-      const tm = document.getElementById(`${shift}-shift-new-time`);
-      const txt = document.getElementById(`${shift}-shift-new-task`);
-      const sel = document.getElementById(`${shift}-shift-new-assignee`);
-      const err = document.getElementById(
-        `${shift}-shift-assignee-error`
-      );
-      sel.classList.remove('error-border');
-      err.style.display = 'none';
-
-      if (!tm.value || !txt.value) {
-        return showToast('Enter time & text', 'error');
-      }
-      if (!sel.value) {
-        sel.classList.add('error-border');
-        err.style.display = 'block';
-        return showToast('Select assignee', 'error');
-      }
-
-      const newT = {
-        time: tm.value,
-        text: txt.value,
-        assignee: sel.value,
-        completed: false,
-        locked: false,
-        id: Date.now().toString()
-      };
-      tasks[shift].push(newT);
-
-      setDefaultInputs();
-      txt.value = '';
-      sel.value = '';
-
-      renderAll();
-      await saveTasks();
-      showToast('Task added', 'success');
-    }
-
-    async function toggleComplete(s, i) {
-      tasks[s][i].completed = !tasks[s][i].completed;
-      renderAll();
-      await saveTasks();
-    }
-
-    async function toggleLock(s, i) {
-      tasks[s][i].locked = !tasks[s][i].locked;
-      renderAll();
-      await saveTasks();
-      showToast(
-        tasks[s][i].locked ? 'Task locked' : 'Task unlocked',
-        'info'
-      );
-    }
-
-    async function deleteTask(s, i) {
-      const task = tasks[s][i];
-      if (task.locked) {
-        showToast('Cannot delete locked task', 'error');
-        return;
-    }
-    if (!confirm('Delete this task?')) return;
-    tasks[s].splice(i, 1);
-    renderAll();
-    await saveTasks();
-    showToast('Task deleted', 'info');
-    }
-
-    async function sortTasks() {
-      ['day', 'night'].forEach(s =>
-        tasks[s].sort((a, b) => new Date(a.time) - new Date(b.time))
-      );
-      renderAll();
-      await saveTasks();
-      showToast('Tasks sorted', 'info');
-    }
-
-    async function clearAllTasks() {
-      if (!confirm('Clear all tasks & remarks?')) return;
-      tasks = { day: [], night: [] };
-      remarks = { day: '', night: '' };
-      document.getElementById('day-shift-remarks').value = '';
-      document.getElementById('night-shift-remarks').value = '';
-      renderAll();
-      await saveTasks();
-      await saveRemarks('day');
-      await saveRemarks('night');
-      showToast('All cleared', 'info');
-    }
-
-    //─────────────────────────────────────────────────────────────────────────
-    // Edit modal
-    function bindEditModal() {
-      document.getElementById('cancel-edit-btn').onclick =
-        closeEditModal;
-      document.getElementById('save-edit-btn').onclick = saveEdit;
-      modal.onclick = e => {
-        if (e.target === modal) closeEditModal();
-      };
-    }
-
-    function openEditModal(shift, idx) {
-      currentEditShift = shift;
-      currentEditIndex = idx;
-      const t = tasks[shift][idx];
-      document.getElementById('edit-task-time').value = t.time;
-      document.getElementById('edit-task-text').value = t.text;
-      document.getElementById(
-        'edit-task-assignee'
-      ).value = t.assignee;
-      document
-        .getElementById('edit-task-assignee')
-        .classList.remove('error-border');
-      document.getElementById(
-        'edit-task-assignee-error'
-      ).style.display = 'none';
-      modal.style.display = 'block';
-    }
-
-    async function saveEdit() {
-      const tm = document.getElementById('edit-task-time');
-      const tx = document.getElementById('edit-task-text');
-      const sel = document.getElementById('edit-task-assignee');
-      const err = document.getElementById(
-        'edit-task-assignee-error'
-      );
-      sel.classList.remove('error-border');
-      err.style.display = 'none';
-
-      if (!tm.value || !tx.value) {
-        return showToast('Enter time & text', 'error');
-      }
-      if (!sel.value) {
-        sel.classList.add('error-border');
-        err.style.display = 'block';
-        return showToast('Select assignee', 'error');
-      }
-
-      const t = tasks[currentEditShift][currentEditIndex];
-      t.time = tm.value;
-      t.text = tx.value;
-      t.assignee = sel.value;
-      closeEditModal();
-      renderAll();
-      await saveTasks();
-      showToast('Task updated', 'success');
-    }
-
-    function closeEditModal() {
-      modal.style.display = 'none';
-    }
-
-    //─────────────────────────────────────────────────────────────────────────
-    // Downloads
-    function downloadChecklist(shift) {
-  	  // Hide UI elements for a clean screenshot
-  	  document.querySelectorAll('button').forEach(btn => btn.style.display = 'none');
- 	    document.querySelector('.action-bar').style.display = 'none';
-  	  document.querySelector('.app-header').style.display = 'none';
-  
-  	  showShift(shift);
-
-  	  const target = document.getElementById('checklist-content');
-  	  window.scrollTo(0, 0);
-
-  	  // Calculate optimal scale based on device capabilities
-  	  const baseDPI = 96; // Standard screen DPI
-  	  const currentDPI = window.devicePixelRatio * baseDPI;
-  	  const qualityScale = Math.max(2, Math.min(4, currentDPI / baseDPI));
-  
-	    html2canvas(target, {
-    	  scale: qualityScale,
-    		width: target.scrollWidth,
-    		height: target.scrollHeight,
-    		letterRendering: true,
-    		useCORS: true,
-    		backgroundColor: getComputedStyle(document.documentElement)
-      	  .getPropertyValue('--bg')
-      	  .trim(),
-    		logging: false,
-    		onclone: function(clonedDoc) {
-      	  // Ensure all styles are properly applied in the clone
-      	  const clonedContainer = clonedDoc.getElementById('checklist-content');
-      	  clonedContainer.style.width = target.scrollWidth + 'px';
-      	  clonedContainer.style.height = 'auto';
-    	  }
-  	  })
-   	 .then(canvas => {
-        // Further enhance image quality with post-processing
-        context = canvas.getContext('2d');
-        context.imageSmoothingEnabled = true;
-        context.imageSmoothingQuality = 'high';
-      
-        const link = document.createElement('a');
-        link.download = `${shift}-shift-${new Date().toISOString().slice(0, 10)}.png`;
-        link.href = canvas.toDataURL('image/png', 1.0); // Maximum quality
-        link.click();
-        showToast(`${shift} shift downloaded`, 'success');
-      })
-        .finally(() => {
-        // Restore UI elements
-        document.querySelectorAll('button').forEach(btn => btn.style.display = '');
-        document.querySelector('.action-bar').style.display = '';
-        document.querySelector('.app-header').style.display = '';
-        showShift('day');
-       });
-    }
-
-    async function exportToExcel() {
-      try {
-        const wb = new ExcelJS.Workbook();
-        wb.creator = 'Ops Center';
-        wb.created = new Date();
-
-        function sheetify(n, arr, rem) {
-          const ws = wb.addWorksheet(`${n} Shift`);
-          ws.mergeCells('A1:E1');
-          ws.getCell('A1').value = `${n.toUpperCase()} SHIFT CHECKLIST`;
-          ws.getCell('A1').font = { bold: true, size: 14 };
-          ws.mergeCells('A2:B2');
-          ws.getCell('A2').value = `Date: ${new Date().toLocaleDateString()}`;
-
-          const headers = ['Time', 'Description', 'Assignee', 'Status', 'Notes'];
-          const hr = ws.addRow(headers);
-          hr.font = { bold: true };
-          hr.eachCell(c => {
-            c.fill = {
-              type: 'pattern',
-              pattern: 'solid',
-              fgColor: { argb: 'FFD3D3D3' }
+    <script>
+        // Initialize Firebase with your config
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "your-project.firebaseapp.com",
+            databaseURL: "https://your-project-default-rtdb.firebaseio.com",
+            projectId: "your-project",
+            storageBucket: "your-project.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+        
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        
+        // DOM elements
+        const currentDateEl = document.getElementById('current-date');
+        const dayShiftBtn = document.getElementById('day-shift');
+        const nightShiftBtn = document.getElementById('night-shift');
+        const incidentItems = document.getElementById('incident-items');
+        const maintenanceItems = document.getElementById('maintenance-items');
+        const addButtons = document.querySelectorAll('.add-btn');
+        const clearButtons = document.querySelectorAll('.clear-btn');
+        const addAlertButtons = document.querySelectorAll('.add-alert-btn');
+        const clearAlertButtons = document.querySelectorAll('.clear-alert-btn');
+        const saveReportBtn = document.querySelector('.save-report');
+        const screenshotBtn = document.querySelector('.take-screenshot');
+        const container = document.querySelector('.container');
+        
+        // Current date and time
+        function updateDateTime() {
+            const now = new Date();
+            const options = { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
             };
-            c.border = {
-              top: { style: 'thin' },
-              left: { style: 'thin' },
-              bottom: { style: 'thin' },
-              right: { style: 'thin' }
-            };
-            c.alignment = { horizontal: 'center' };
-          });
-
-          arr.forEach(t => {
-            const row = ws.addRow([
-              formatExcel(t.time),
-              t.text,
-              t.assignee,
-              t.completed ? 'Completed' : 'Pending',
-              ''
-            ]);
-            if (t.completed) {
-              row.eachCell(c => {
-                c.font = { color: { argb: 'FF16A34A' } };
-              });
-            }
-          });
-
-          ws.addRow([]);
-          ws.addRow(['Remarks:', rem]);
-          ws.columns = [
-            { width: 20 },
-            { width: 40 },
-            { width: 20 },
-            { width: 12 },
-            { width: 30 }
-          ];
+            currentDateEl.textContent = now.toLocaleDateString('en-US', options);
         }
-
-        sheetify('Day', tasks.day, remarks.day);
-        sheetify('Night', tasks.night, remarks.night);
-
-        const buf = await wb.xlsx.writeBuffer();
-        saveAs(
-          new Blob([buf], { type: 'application/octet-stream' }),
-          `Shift_Report_${new Date().toISOString().slice(0, 10)}.xlsx`
-        );
-        showToast('Excel exported', 'success');
-      } catch (e) {
-        console.error(e);
-        showToast('Excel failed', 'error');
-      }
-    }
-
-    //─────────────────────────────────────────────────────────────────────────
-    // Shift toggle
-    function showShift(s) {
-      document
-        .querySelectorAll('.shift-tab')
-        .forEach(el => el.classList.remove('active'));
-      document
-        .querySelectorAll('.shift-container')
-        .forEach(el => el.classList.remove('active'));
-      document
-        .querySelector(`.shift-tab.${s}`)
-        .classList.add('active');
-      document.getElementById(`${s}-shift-container`).classList.add('active');
-    }
-
-    //─────────────────────────────────────────────────────────────────────────
-    // Drag & drop
-    function bindDrag() {
-      let dItem, dShift, dIndex;
-      document.querySelectorAll('.task-item').forEach(item => {
-        item.addEventListener('dragstart', e => {
-          dItem = item;
-          dShift = item.dataset.shift;
-          dIndex = +item.dataset.index;
-          item.classList.add('dragging');
+        
+        // Update date time immediately and then every minute
+        updateDateTime();
+        setInterval(updateDateTime, 60000);
+        
+        // Shift toggle functionality
+        dayShiftBtn.addEventListener('click', () => {
+            dayShiftBtn.classList.add('active');
+            nightShiftBtn.classList.remove('active');
+            updateFirebaseShift('Day Shift');
         });
-        item.addEventListener('dragend', () => {
-          item.classList.remove('dragging');
-          saveTasks();
+        
+        nightShiftBtn.addEventListener('click', () => {
+            nightShiftBtn.classList.add('active');
+            dayShiftBtn.classList.remove('active');
+            updateFirebaseShift('Night Shift');
         });
-        item.addEventListener('dragover', e => e.preventDefault());
-        item.addEventListener('drop', () => {
-          const ts = item.dataset.shift;
-          const ti = +item.dataset.index;
-          if (ts === dShift) {
-            const [m] = tasks[ts].splice(dIndex, 1);
-            tasks[ts].splice(ti, 0, m);
-            renderAll();
-          }
+        
+        // Add new entry to sections
+        addButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const section = button.getAttribute('data-section');
+                addNewEntry(section);
+            });
         });
-      });
-    }
-
-    //─────────────────────────────────────────────────────────────────────────
-    // Alarm checking
-    function startAlarmChecker() {
-      setInterval(checkAlarms, 30000);
-      checkAlarms();
-    }
-    function checkAlarms() {
-      const now = Date.now();
-      const upcoming = [];
-      ['day', 'night'].forEach(s =>
-        tasks[s].forEach(t => {
-          if (!t.completed) {
-            const diff = new Date(t.time).getTime() - now;
-            if (diff > -60000 && diff < 300000) {
-              upcoming.push({ s, t, diff });
+        
+        // Clear all entries from sections
+        clearButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const section = button.getAttribute('data-section');
+                if (confirm(`Are you sure you want to clear all ${section} entries?`)) {
+                    clearSection(section);
+                }
+            });
+        });
+        
+        // Add new alert item
+        addAlertButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const type = button.getAttribute('data-type');
+                addNewAlert(type);
+            });
+        });
+        
+        // Clear all alert items
+        clearAlertButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const type = button.getAttribute('data-type');
+                if (confirm(`Are you sure you want to clear all ${type} items?`)) {
+                    clearAlertSection(type);
+                }
+            });
+        });
+        
+        // Save report
+        saveReportBtn.addEventListener('click', () => {
+            saveReport();
+        });
+        
+        // Take screenshot
+        screenshotBtn.addEventListener('click', () => {
+            takeScreenshot();
+        });
+        
+        // Function to add a new entry
+        function addNewEntry(section) {
+            const sectionEl = document.getElementById(`${section}-entries`);
+            const entryId = Date.now();
+            
+            const entryHTML = `
+                <li class="entry-item" data-id="${entryId}">
+                    <div class="bullet">•</div>
+                    <div class="entry-content">
+                        <textarea class="entry-input" placeholder="Enter details here..."></textarea>
+                        <div class="input-actions">
+                            <button class="cancel-btn" onclick="cancelEntry('${section}', ${entryId})">
+                                <i class="fas fa-times"></i> Cancel
+                            </button>
+                            <button class="save-btn" onclick="saveEntry('${section}', ${entryId})">
+                                <i class="fas fa-check"></i> Save
+                            </button>
+                        </div>
+                    </div>
+                </li>
+            `;
+            
+            sectionEl.querySelector('.entry-list').insertAdjacentHTML('afterbegin', entryHTML);
+        }
+        
+        // Function to save an entry
+        function saveEntry(section, entryId) {
+            const entryEl = document.querySelector(`#${section}-entries .entry-item[data-id="${entryId}"]`);
+            const textarea = entryEl.querySelector('.entry-input');
+            const content = textarea.value.trim();
+            
+            if (content) {
+                // Replace textarea with content div
+                entryEl.querySelector('.entry-content').innerHTML = `
+                    <div class="entry-text">${content}</div>
+                    <div class="entry-actions">
+                        <button class="edit-btn" onclick="editEntry('${section}', ${entryId})">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="delete-btn" onclick="removeEntry('${section}', ${entryId})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+                
+                // Save to Firebase
+                const entryRef = database.ref(`handover/${section}/${entryId}`);
+                entryRef.set({
+                    content: content,
+                    timestamp: Date.now()
+                });
+            } else {
+                entryEl.remove();
             }
-          }
-        })
-      );
-      upcoming.sort((a, b) => a.diff - b.diff);
-      document
-        .querySelectorAll('.task-item.upcoming')
-        .forEach(el => el.classList.remove('upcoming'));
-      if (upcoming.length) {
-        const { s, t } = upcoming[0];
-        const idx = tasks[s].indexOf(t);
-        const el = document.querySelector(
-          `#${s}-shift-tasks .task-item[data-index="${idx}"]`
-        );
-        if (el) el.classList.add('upcoming');
-        showAlarm(s, t);
-      } else {
-        closeAlarm();
-      }
-    }
-
-    function showAlarm(_s, task) {
-      const box = document.getElementById('alarmNotification');
-      document.getElementById('alarmMessage').textContent = `
-        ${formatDisplay(task.time)} – ${task.text}`;
-      box.style.display = 'block';
-    }
-    function closeAlarm() {
-      document.getElementById('alarmNotification').style.display = 'none';
-    }
-
-    //─────────────────────────────────────────────────────────────────────────
-    // Utility
-    function formatDisplay(dtStr) {
-      const d = new Date(dtStr);
-      return d.toLocaleString([], {
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    }
-    function formatExcel(dtStr) {
-      const d = new Date(dtStr);
-      return (
-        d.toLocaleDateString() +
-        ' ' +
-        d.toLocaleTimeString([], {
-          hour: '2-digit',
-          minute: '2-digit'
-        })
-      );
-    }
-    function showToast(msg, type = 'info') {
-      const wrap = document.getElementById('toastWrap');
-      const el = document.createElement('div');
-      el.className = `toast ${type}`;
-      el.textContent = msg;
-      wrap.appendChild(el);
-      setTimeout(() => el.remove(), 3000);
-    }
-    function escapeHtml(str) {
-      const p = document.createElement('p');
-      p.textContent = str;
-      return p.innerHTML;
-    }
-  </script>
+        }
+        
+        // Function to edit an entry
+        function editEntry(section, entryId) {
+            const entryEl = document.querySelector(`#${section}-entries .entry-item[data-id="${entryId}"]`);
+            const content = entryEl.querySelector('.entry-text').textContent;
+            
+            entryEl.querySelector('.entry-content').innerHTML = `
+                <textarea class="entry-input">${content}</textarea>
+                <div class="input-actions">
+                    <button class="cancel-btn" onclick="cancelEdit('${section}', ${entryId}, '${content.replace(/\n/g, '\\n')}')">
+                        <i class="fas fa-times"></i> Cancel
+                    </button>
+                    <button class="save-btn" onclick="saveEntry('${section}', ${entryId})">
+                        <i class="fas fa-check"></i> Save
+                    </button>
+                </div>
+            `;
+        }
+        
+        // Function to cancel editing an entry
+        function cancelEdit(section, entryId, originalContent) {
+            const entryEl = document.querySelector(`#${section}-entries .entry-item[data-id="${entryId}"]`);
+            
+            // Restore original content
+            entryEl.querySelector('.entry-content').innerHTML = `
+                <div class="entry-text">${originalContent.replace(/\\n/g, '\n')}</div>
+                <div class="entry-actions">
+                    <button class="edit-btn" onclick="editEntry('${section}', ${entryId})">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="delete-btn" onclick="removeEntry('${section}', ${entryId})">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            `;
+        }
+        
+        // Function to cancel adding an entry
+        function cancelEntry(section, entryId) {
+            const entryEl = document.querySelector(`#${section}-entries .entry-item[data-id="${entryId}"]`);
+            entryEl.remove();
+        }
+        
+        // Function to remove an entry
+        function removeEntry(section, entryId) {
+            const entryEl = document.querySelector(`#${section}-entries .entry-item[data-id="${entryId}"]`);
+            if (entryEl) {
+                entryEl.remove();
+                
+                // Remove from Firebase
+                database.ref(`handover/${section}/${entryId}`).remove();
+            }
+        }
+        
+        // Function to clear a section
+        function clearSection(section) {
+            const sectionEl = document.getElementById(`${section}-entries`);
+            sectionEl.querySelector('.entry-list').innerHTML = '';
+            
+            // Remove from Firebase
+            database.ref(`handover/${section}`).remove();
+        }
+        
+        // Function to add a new alert item
+        function addNewAlert(type) {
+            const itemsEl = document.getElementById(`${type}-items`);
+            const alertId = Date.now();
+            
+            const alertHTML = `
+                <div class="alert-item" data-id="${alertId}">
+                    <div class="alert-bullet">•</div>
+                    <div class="alert-content">
+                        <textarea class="alert-input" placeholder="Enter ${type} details..."></textarea>
+                    </div>
+                    <div class="alert-item-actions">
+                        <button class="edit-alert-btn" onclick="saveAlert('${type}', ${alertId})">
+                            <i class="fas fa-check"></i>
+                        </button>
+                        <button class="delete-alert-btn" onclick="cancelAlert('${type}', ${alertId})">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            itemsEl.insertAdjacentHTML('afterbegin', alertHTML);
+        }
+        
+        // Function to save an alert item
+        function saveAlert(type, alertId) {
+            const alertEl = document.querySelector(`#${type}-items .alert-item[data-id="${alertId}"]`);
+            const input = alertEl.querySelector('.alert-input');
+            const content = input.value.trim();
+            
+            if (content) {
+                // Replace input with content div
+                alertEl.querySelector('.alert-content').innerHTML = `<div class="alert-text">${content}</div>`;
+                
+                // Add edit and delete buttons
+                alertEl.querySelector('.alert-item-actions').innerHTML = `
+                    <button class="edit-alert-btn" onclick="editAlert('${type}', ${alertId})">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="delete-alert-btn" onclick="removeAlert('${type}', ${alertId})">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                `;
+                
+                // Save to Firebase
+                const alertRef = database.ref(`handover/${type}/${alertId}`);
+                alertRef.set({
+                    content: content,
+                    timestamp: Date.now()
+                });
+            } else {
+                alertEl.remove();
+            }
+        }
+        
+        // Function to edit an alert item
+        function editAlert(type, alertId) {
+            const alertEl = document.querySelector(`#${type}-items .alert-item[data-id="${alertId}"]`);
+            const content = alertEl.querySelector('.alert-text').textContent;
+            
+            alertEl.querySelector('.alert-content').innerHTML = `<textarea class="alert-input">${content}</textarea>`;
+            
+            // Change buttons to save and cancel
+            alertEl.querySelector('.alert-item-actions').innerHTML = `
+                <button class="edit-alert-btn" onclick="saveAlert('${type}', ${alertId})">
+                    <i class="fas fa-check"></i>
+                </button>
+                <button class="delete-alert-btn" onclick="cancelEditAlert('${type}', ${alertId}, '${content.replace(/\n/g, '\\n')}')">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+        }
+        
+        // Function to cancel editing an alert
+        function cancelEditAlert(type, alertId, originalContent) {
+            const alertEl = document.querySelector(`#${type}-items .alert-item[data-id="${alertId}"]`);
+            
+            // Restore original content
+            alertEl.querySelector('.alert-content').innerHTML = `<div class="alert-text">${originalContent.replace(/\\n/g, '\n')}</div>`;
+            
+            // Restore edit and delete buttons
+            alertEl.querySelector('.alert-item-actions').innerHTML = `
+                <button class="edit-alert-btn" onclick="editAlert('${type}', ${alertId})">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <button class="delete-alert-btn" onclick="removeAlert('${type}', ${alertId})">
+                    <i class="fas fa-trash"></i>
+                </button>
+            `;
+        }
+        
+        // Function to cancel adding an alert
+        function cancelAlert(type, alertId) {
+            const alertEl = document.querySelector(`#${type}-items .alert-item[data-id="${alertId}"]`);
+            alertEl.remove();
+        }
+        
+        // Function to remove an alert item
+        function removeAlert(type, alertId) {
+            const alertEl = document.querySelector(`#${type}-items .alert-item[data-id="${alertId}"]`);
+            if (alertEl) {
+                alertEl.remove();
+                
+                // Remove from Firebase
+                database.ref(`handover/${type}/${alertId}`).remove();
+            }
+        }
+        
+        // Function to clear an alert section
+        function clearAlertSection(type) {
+            const itemsEl = document.getElementById(`${type}-items`);
+            itemsEl.innerHTML = '';
+            
+            // Remove from Firebase
+            database.ref(`handover/${type}`).remove();
+        }
+        
+        // Function to update shift in Firebase
+        function updateFirebaseShift(shift) {
+            database.ref('handover/metadata').update({
+                shift: shift
+            });
+        }
+        
+        // Function to save the report
+        function saveReport() {
+            alert('Report saved successfully!');
+        }
+        
+        // Function to take a screenshot
+        function takeScreenshot() {
+            // Store current shift state
+            const isDayShift = dayShiftBtn.classList.contains('active');
+            
+            // Add screenshot mode class to hide buttons
+            container.classList.add('screenshot-mode');
+            
+            // Hide the non-active shift button
+            if (isDayShift) {
+                nightShiftBtn.style.display = 'none';
+            } else {
+                dayShiftBtn.style.display = 'none';
+            }
+            
+            // Wait for the next render cycle to ensure the UI updates
+            setTimeout(() => {
+                html2canvas(container, {
+                    scale: 2, // Higher resolution
+                    logging: false,
+                    useCORS: true
+                }).then(canvas => {
+                    // Remove screenshot mode class to show buttons again
+                    container.classList.remove('screenshot-mode');
+                    
+                    // Restore both shift buttons
+                    dayShiftBtn.style.display = 'flex';
+                    nightShiftBtn.style.display = 'flex';
+                    
+                    const link = document.createElement('a');
+                    link.download = `handover-report-${new Date().toISOString().slice(0, 10)}.png`;
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                });
+            }, 100);
+        }
+        
+        // Load data from Firebase on page load
+        function loadHandoverData() {
+            const handoverRef = database.ref('handover');
+            
+            handoverRef.on('value', (snapshot) => {
+                const data = snapshot.val();
+                
+                if (data) {
+                    // Load metadata
+                    if (data.metadata) {
+                        if (data.metadata.shift === 'Night Shift') {
+                            nightShiftBtn.click();
+                        }
+                    }
+                    
+                    // Load incidents
+                    if (data.incident) {
+                        incidentItems.innerHTML = '';
+                        Object.entries(data.incident).forEach(([id, incident]) => {
+                            const alertHTML = `
+                                <div class="alert-item" data-id="${id}">
+                                    <div class="alert-bullet">•</div>
+                                    <div class="alert-content">
+                                        <div class="alert-text">${incident.content}</div>
+                                    </div>
+                                    <div class="alert-item-actions">
+                                        <button class="edit-alert-btn" onclick="editAlert('incident', ${id})">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="delete-alert-btn" onclick="removeAlert('incident', ${id})">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            `;
+                            incidentItems.insertAdjacentHTML('beforeend', alertHTML);
+                        });
+                    }
+                    
+                    // Load maintenance
+                    if (data.maintenance) {
+                        maintenanceItems.innerHTML = '';
+                        Object.entries(data.maintenance).forEach(([id, maintenance]) => {
+                            const alertHTML = `
+                                <div class="alert-item" data-id="${id}">
+                                    <div class="alert-bullet">•</div>
+                                    <div class="alert-content">
+                                        <div class="alert-text">${maintenance.content}</div>
+                                    </div>
+                                    <div class="alert-item-actions">
+                                        <button class="edit-alert-btn" onclick="editAlert('maintenance', ${id})">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="delete-alert-btn" onclick="removeAlert('maintenance', ${id})">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            `;
+                            maintenanceItems.insertAdjacentHTML('beforeend', alertHTML);
+                        });
+                    }
+                    
+                    // Load sections
+                    ['general', 'reminders', 'oncall'].forEach(section => {
+                        if (data[section]) {
+                            const sectionEl = document.getElementById(`${section}-entries`);
+                            sectionEl.querySelector('.entry-list').innerHTML = '';
+                            
+                            Object.entries(data[section]).forEach(([id, entry]) => {
+                                const entryHTML = `
+                                    <li class="entry-item" data-id="${id}">
+                                        <div class="bullet">•</div>
+                                        <div class="entry-content">
+                                            <div class="entry-text">${entry.content}</div>
+                                            <div class="entry-actions">
+                                                <button class="edit-btn" onclick="editEntry('${section}', ${id})">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button class="delete-btn" onclick="removeEntry('${section}', ${id})">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </li>
+                                `;
+                                
+                                sectionEl.querySelector('.entry-list').insertAdjacentHTML('beforeend', entryHTML);
+                            });
+                        }
+                    });
+                }
+            });
+        }
+        
+        // Initialize the app
+        window.addEventListener('load', () => {
+            loadHandoverData();
+        });
+    </script>
 </body>
 </html>
