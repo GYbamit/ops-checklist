@@ -90,18 +90,6 @@
 
       --radius: 10px;
     }
-    [data-theme="dark"] {
-      --bg: #1e293b;
-      --card: #334155;
-      --text: #2277cc;
-      --muted: #9ca3af;
-      --border: #475569;
-      --border-strong: #64748b;
-      --shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
-
-      --chip-bg: #475569;
-      --chip-text: #f1f5f9;
-    }
 
     /* ─────────────────────────────────────────────────────────
        Reset & body
@@ -139,19 +127,6 @@
     .brand {
       font-weight: 700;
       font-size: 20px;
-    }
-    .theme-toggle {
-      padding: 6px 12px;
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      background: var(--card);
-      color: var(--text);
-      cursor: pointer;
-      transition: background 0.2s, color 0.2s;
-    }
-    .theme-toggle:hover {
-      background: var(--primary);
-      color: #fff;
     }
     .status-indicator {
       display: inline-flex;
@@ -754,7 +729,6 @@
           <span id="connectionStatus" class="status-dot"></span>
           <span id="connectionText">Connecting...</span>
         </div>
-        <button id="themeToggle" class="theme-toggle">Toggle Theme</button>
       </div>
     </div>
   </header>
@@ -955,7 +929,6 @@
     const modal = document.getElementById('editTaskModal');
 
     window.onload = async () => {
-      initTheme();
       populateAssignees();
       initDateTimeInputs();
       await initFirebase();
@@ -1079,22 +1052,6 @@
     function syncNow() {
       if (!isConnected) return showToast('No internet', 'error');
       saveTasks().then(() => showToast('Synced', 'success'));
-    }
-
-    //─────────────────────────────────────────────────────────────────────────
-    // Theme toggle
-    function initTheme() {
-      const btn = document.getElementById('themeToggle');
-      const root = document.documentElement;
-      const saved = localStorage.getItem('theme') || 'light';
-      root.setAttribute('data-theme', saved);
-      btn.onclick = () => {
-        const next = root.getAttribute('data-theme') === 'light'
-          ? 'dark'
-          : 'light';
-        root.setAttribute('data-theme', next);
-        localStorage.setItem('theme', next);
-      };
     }
 
     //─────────────────────────────────────────────────────────────────────────
@@ -1387,7 +1344,7 @@
     		logging: false,
     		onclone: function(clonedDoc) {
       	  // Ensure all styles are properly applied in the clone
-      	  const clonedContainer = clonedDoc.getElementById('checklist-content');
+      	  clonedContainer = clonedDoc.getElementById('checklist-content');
       	  clonedContainer.style.width = target.scrollWidth + 'px';
       	  clonedContainer.style.height = 'auto';
     	  }
