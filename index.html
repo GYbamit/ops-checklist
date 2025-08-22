@@ -1349,44 +1349,47 @@
     //─────────────────────────────────────────────────────────────────────────
     // Downloads
     function downloadChecklist(shift) {
-      const h = document.querySelector('.app-header');
-      const a = document.querySelector('.action-bar');
-      h.style.display = 'none';
-      a.style.display = 'none';
-      showShift(shift);
+    // Hide all buttons and action elements
+    document.querySelectorAll('button').forEach(btn => btn.style.display = 'none');
+    document.querySelector('.action-bar').style.display = 'none';
+    document.querySelector('.app-header').style.display = 'none';
+    
+    showShift(shift);
 
-      // Save and override devicePixelRatio
-      const originalDPR = window.devicePixelRatio;
-      Object.defineProperty(window, 'devicePixelRatio', { get: () => 4 });
+    // Save and override devicePixelRatio
+    const originalDPR = window.devicePixelRatio;
+    Object.defineProperty(window, 'devicePixelRatio', { get: () => 4 });
 
-      const target = document.getElementById('checklist-content');
-      window.scrollTo(0, 0);
+    const target = document.getElementById('checklist-content');
+    window.scrollTo(0, 0);
 
-      html2canvas(target, {
-        scale: 4,
-        width: target.scrollWidth,
-        height: target.scrollHeight,
-        letterRendering: true,
-        useCORS: true,
-        backgroundColor: getComputedStyle(document.documentElement)
-          .getPropertyValue('--bg')
-          .trim()
+    html2canvas(target, {
+      scale: 4,
+      width: target.scrollWidth,
+      height: target.scrollHeight,
+      letterRendering: true,
+      useCORS: true,
+      backgroundColor: getComputedStyle(document.documentElement)
+        .getPropertyValue('--bg')
+        .trim()
+    })
+      .then(canvas => {
+        const link = document.createElement('a');
+        link.download = `${shift}-shift-${new Date().toISOString().slice(0, 10)}.png`;
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+        showToast(`${shift} downloaded`, 'success');
       })
-        .then(canvas => {
-          const link = document.createElement('a');
-          link.download = `${shift}-shift-${new Date().toISOString().slice(0, 10)}.png`;
-          link.href = canvas.toDataURL('image/png');
-          link.click();
-          showToast(`${shift} downloaded`, 'success');
-        })
-        .finally(() => {
-          // Restore DPR
-          Object.defineProperty(window, 'devicePixelRatio', { get: () => originalDPR });
+      .finally(() => {
+        // Restore DPR
+        Object.defineProperty(window, 'devicePixelRatio', { get: () => originalDPR });
 
-          h.style.display = '';
-          a.style.display = '';
-          showShift('day');
-        });
+        // Show all buttons and action elements again
+        document.querySelectorAll('button').forEach(btn => btn.style.display = '');
+        document.querySelector('.action-bar').style.display = '';
+        document.querySelector('.app-header').style.display = '';
+        showShift('day');
+      });
     }
 
     async function exportToExcel() {
@@ -1587,13 +1590,3 @@
   </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
